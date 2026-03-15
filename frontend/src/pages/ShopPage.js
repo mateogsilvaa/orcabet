@@ -1,0 +1,183 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import api from '@/services/api';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AthleteCard } from '@/components/AthleteCard';
+import { toast } from 'sonner';
+import { ShoppingBag, Gift, Coins, Sparkles, Crown, Star } from 'lucide-react';
+
+const PACKS = [
+  { id: 'free', name: 'Sobre Gratis', desc: 'Un sobre diario gratuito', price: 0, cards: 1, icon: Gift, color: 'text-green-400', border: 'border-green-500/30 hover:border-green-500/50', bg: 'from-green-900/20 to-green-950/40' },
+  { id: 'basic', name: 'Sobre Basico', desc: '3 cartas con probabilidad estandar', price: 100, cards: 3, icon: ShoppingBag, color: 'text-gray-400', border: 'border-gray-500/30 hover:border-gray-500/50', bg: 'from-gray-800/20 to-gray-900/40' },
+  { id: 'gold', name: 'Sobre Oro', desc: '5 cartas con mejor probabilidad', price: 250, cards: 5, icon: Star, color: 'text-yellow-400', border: 'border-yellow-500/30 hover:border-yellow-500/50', bg: 'from-yellow-900/20 to-yellow-950/40' },
+  { id: 'premium', name: 'Sobre Premium', desc: '5 cartas con maxima probabilidad', price: 500, cards: 5, icon: Crown, color: 'text-purple-400', border: 'border-purple-500/30 hover:border-purple-500/50', bg: 'from-purple-900/20 to-purple-950/40' },
+];
+
+export default function ShopPage() {
+  const { user, refreshBalance } = useAuth();
+  const [freeAvailable, setFreeAvailable] = useState(false);
+  const [buying, setBuying] = useState(null);
+  const [openedCards, setOpenedCards] = useState([]);
+  const [showOpening, setShowOpening] = useState(false);
+  const [revealedIdx, setRevealedIdx] = useState(-1);
+
+  useEffect(() => { checkFree(); }, []);
+
+  const checkFree = async () => {
+    try {
+      const res = await api.get('/packs/free-available');
+      setFreeAvailable(res.data.available);
+    } catch { /* ignore */ }
+  };
+
+  const buyPack = async (packType) => {
+    setBuying(packType);
+    try {
+      const res = await api.post('/packs/buy', { pack_type: packType });
+      setOpenedCards(res.data.cards);
+      setRevealedIdx(-1);
+      setShowOpening(true);
+      await refreshBalance();
+      if (packType === 'free') setFreeAvailable(false);
+      toast.success('Sobre abierto!');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error comprando sobre');
+    }
+    setBuying(null);
+  };
+
+  const revealNext = () => {
+    if (revealedIdx < openedCards.length - 1) {
+      setRevealedIdx(prev => prev + 1);
+    }
+  };
+
+  const revealAll = () => {
+    setRevealedIdx(openedCards.length - 1);
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in" data-testid="shop-page">
+      <div>
+        <p className="text-xs font-mono text-gray-600 tracking-[0.2em] uppercase">Tienda</p>
+        <h1 className="font-heading text-2xl md:text-3xl font-black text-white mt-1">Sobres de Cartas</h1>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {PACKS.map(pack => {
+          const PackIcon = pack.icon;
+          const canBuy = pack.id === 'free' ? freeAvailable : (user?.balance || 0) >= pack.price;
+          return (
+            <Card key={pack.id} className={`bg-gradient-to-b ${pack.bg} border ${pack.border} transition-all duration-300 hover:-translate-y-1`} data-testid={`pack-card-${pack.id}`}>
+              <CardContent className="p-6 text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-black/30 flex items-center justify-center">
+                  <PackIcon size={32} className={pack.color} />
+                </div>
+                <div>
+                  <h3 className="font-heading text-sm font-bold text-white">{pack.name}</h3>
+                  <p className="text-xs text-gray-500 font-body mt-1">{pack.desc}</p>
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  {pack.price > 0 ? (
+                    <>
+                      <Coins size={14} className="text-primary" />
+                      <span className="font-heading font-bold text-primary">{pack.price}</span>
+                    </>
+                  ) : (
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Gratis</Badge>
+                  )}
+                </div>
+                <p className="text-[10px] font-mono text-gray-600">{pack.cards} {pack.cards === 1 ? 'carta' : 'cartas'}</p>
+                <Button
+                  onClick={() => buyPack(pack.id)}
+                  disabled={buying === pack.id || !canBuy}
+                  data-testid={`buy-pack-${pack.id}`}
+                  className={`w-full font-bold text-xs uppercase tracking-wider ${
+                    pack.id === 'free' && !freeAvailable
+                      ? 'bg-gray-700 text-gray-500'
+                      : 'bg-primary text-black hover:bg-primary/90 shadow-[0_0_15px_rgba(255,107,0,0.2)]'
+                  }`}
+                  size="sm"
+                >
+                  {buying === pack.id ? (
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  ) : pack.id === 'free' && !freeAvailable ? (
+                    'Reclamado'
+                  ) : (
+                    'Abrir'
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Pack Opening Dialog */}
+      <Dialog open={showOpening} onOpenChange={setShowOpening}>
+        <DialogContent className="bg-[#0A0A0F] border-primary/20 max-w-3xl max-h-[85vh] overflow-y-auto" data-testid="pack-opening-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl text-primary neon-text text-center">
+              <Sparkles className="inline mr-2" size={20} />
+              Cartas Obtenidas
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-4 justify-center py-4">
+            {openedCards.map((card, idx) => (
+              <div key={card.id} className="card-flip-container" data-testid={`opened-card-${idx}`}>
+                <div className={`card-flip-inner ${idx <= revealedIdx ? 'flipped' : ''}`}>
+                  {/* Back */}
+                  <div className="card-flip-front bg-[#0A0A0F] border-2 border-primary/30 rounded-xl flex items-center justify-center cursor-pointer" onClick={revealNext}>
+                    <div className="text-center">
+                      <p className="font-heading text-3xl font-black text-primary neon-text">?</p>
+                      <p className="font-heading text-[8px] text-primary/40 tracking-widest mt-2">TOCA PARA REVELAR</p>
+                    </div>
+                  </div>
+                  {/* Front (revealed) */}
+                  <div className="card-flip-back">
+                    <div className={`w-full h-full rounded-xl border-2 p-3 flex flex-col items-center justify-center text-center rarity-${card.rarity}`}>
+                      <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center mb-2">
+                        <span className="font-heading text-lg font-black text-white">{card.overall_rating}</span>
+                      </div>
+                      <p className="font-heading text-xs font-bold text-white truncate w-full">{card.athlete_name}</p>
+                      <p className="text-[9px] text-gray-400 font-body">{card.athlete_position}</p>
+                      <p className="text-[9px] text-gray-500 font-body">{card.athlete_team}</p>
+                      <Badge className={`mt-2 text-[8px] ${
+                        card.rarity === 'legendary' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                        card.rarity === 'epic' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                        card.rarity === 'rare' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                        'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                      }`}>
+                        {card.rarity === 'legendary' ? 'Legendaria' : card.rarity === 'epic' ? 'Epica' : card.rarity === 'rare' ? 'Rara' : 'Comun'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-center gap-3">
+            {revealedIdx < openedCards.length - 1 && (
+              <>
+                <Button onClick={revealNext} className="bg-primary text-black font-bold" size="sm" data-testid="reveal-next-btn">
+                  Revelar Siguiente
+                </Button>
+                <Button onClick={revealAll} variant="outline" className="border-white/10 text-gray-400" size="sm" data-testid="reveal-all-btn">
+                  Revelar Todas
+                </Button>
+              </>
+            )}
+            {revealedIdx >= openedCards.length - 1 && (
+              <Button onClick={() => setShowOpening(false)} className="bg-primary text-black font-bold" size="sm">
+                Cerrar
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

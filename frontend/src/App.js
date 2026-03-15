@@ -1,53 +1,74 @@
-import { useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { Toaster } from "sonner";
+import Layout from "@/components/Layout";
+import AuthPage from "@/pages/AuthPage";
+import DashboardPage from "@/pages/DashboardPage";
+import BettingPage from "@/pages/BettingPage";
+import ShopPage from "@/pages/ShopPage";
+import CollectionPage from "@/pages/CollectionPage";
+import RoulettePage from "@/pages/RoulettePage";
+import MarketPage from "@/pages/MarketPage";
+import ShowPage from "@/pages/ShowPage";
+import AdminPage from "@/pages/AdminPage";
+import TeamGeneratorPage from "@/pages/TeamGeneratorPage";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 font-mono text-sm tracking-widest">CARGANDO...</p>
+        </div>
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/auth" />;
+  return children;
+}
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
+function AppRoutes() {
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
+    <Routes>
+      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route index element={<DashboardPage />} />
+        <Route path="apuestas" element={<BettingPage />} />
+        <Route path="tienda" element={<ShopPage />} />
+        <Route path="coleccion" element={<CollectionPage />} />
+        <Route path="ruleta" element={<RoulettePage />} />
+        <Route path="mercado" element={<MarketPage />} />
+        <Route path="show" element={<ShowPage />} />
+        <Route path="show/:userId" element={<ShowPage />} />
+        <Route path="equipo" element={<TeamGeneratorPage />} />
+        <Route path="admin" element={<AdminPage />} />
+      </Route>
+    </Routes>
   );
-};
+}
 
 function App() {
   return (
-    <div className="App">
+    <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
+        <Toaster
+          theme="dark"
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#0A0A0F',
+              border: '1px solid rgba(255,107,0,0.3)',
+              color: '#f5f5f5',
+              fontFamily: 'Exo 2, sans-serif',
+            },
+          }}
+        />
+        <AppRoutes />
       </BrowserRouter>
-    </div>
+    </AuthProvider>
   );
 }
 
