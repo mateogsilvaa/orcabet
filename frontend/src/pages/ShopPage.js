@@ -130,8 +130,8 @@ export default function ShopPage() {
               <div key={card.id} className="card-flip-container" data-testid={`opened-card-${idx}`}>
                 <div className={`card-flip-inner ${idx <= revealedIdx ? 'flipped' : ''}`}>
                   {/* Back */}
-                  <div className="card-flip-front bg-[#0A0A0F] border-2 border-primary/30 rounded-xl flex items-center justify-center cursor-pointer" onClick={revealNext}>
-                    <div className="text-center">
+                  <div className="card-flip-front bg-[#0A0A0F] border-2 border-primary/30 rounded-xl flex items-center justify-center cursor-pointer" onClick={(e) => { e.stopPropagation(); revealNext(); }}>
+                    <div className="text-center pointer-events-none">
                       <p className="font-heading text-3xl font-black text-primary neon-text">?</p>
                       <p className="font-heading text-[8px] text-primary/40 tracking-widest mt-2">TOCA PARA REVELAR</p>
                     </div>

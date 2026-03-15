@@ -114,6 +114,11 @@
     transition: width 0.5s ease-out;
 }
 
+/* Fix dialog overlay click issues */
+[data-radix-portal] [data-state="open"] {
+    pointer-events: auto;
+}
+
 /* Canvas team generator */
 .team-canvas-container {
     background: linear-gradient(135deg, #050505 0%, #0a0a1a 50%, #050505 100%);
