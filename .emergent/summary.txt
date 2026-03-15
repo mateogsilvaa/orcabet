@@ -1,0 +1,181 @@
+<analysis>**original_problem_statement:**
+The user wants to build a web application called Orcabet (or Fantasy Orcasitas). This platform merges sports betting (using virtual currency) with a digital card collection system (Ultimate Team style).
+
+**PRODUCT REQUIREMENTS:**
+- **Tech Stack:** Originally requested HTML5, CSS3, Vanilla JS, and Firebase. The agent implemented it using React, FastAPI, and MongoDB, but the user has now reiterated the requirement for **Firebase**.
+- **User Registration & Login:** Email/password authentication. New users receive an initial balance (changed from 1000 to 100 coins) and an empty card array.
+- **Home (Dashboard):** Main navigation, user greeting, and real-time balance display.
+- **Betting Page:** Core feature for users to bet on real-world sports events.
+- **Pack Store:** Users can buy card packs with their virtual currency. Includes different pack types and a daily free pack. Card rarities: Common, Rare, Epic, Legendary. When opening a pack, the user sees multiple cards but can only choose one to keep.
+- **Card Market:** An auction house for players to buy and sell cards for a fixed price or via auction.
+- **Collection:** A personal gallery showing the user's collected cards and progress.
+- **Daily Roulette:** A minigame to win currency. The user specified this should be a real roulette game (betting on numbers/colors), not just a random prize wheel.
+- **Card Show:** A social page to view other users' profiles and collections.
+- **My Team Generator:** The user initially requested this but has now asked for it to be **removed**.
+- **Admin Panel:** The user requested an admin page to manually add betting events and give currency to players.
+- **Ranking:** The ranking should only show real players (not admins), be ordered by the number of cards, and should not display coin balances.
+- **Design:** The user provided a reference site (fantasyorcasitas.es) and later specified a new color palette and the 'Montserrat' font.
+
+**User's preferred language**: Spanish (español). The next agent MUST respond in Spanish.
+
+**what currently exists?**
+A full-stack application with a React frontend and a FastAPI backend has been built. The backend currently uses MongoDB for the database. The application includes all the core features requested in the initial problem statement, such as user authentication, a dashboard, betting, a card shop, a marketplace, a collection page, a roulette game, and an admin panel. Two full iterations of development have been completed, including a major feature update based on user feedback. The project is now at the beginning of a major migration from MongoDB to Firebase as requested by the user.
+
+**Last working item**:
+    - Last item agent was working: The user requested to migrate the entire backend and database from the current FastAPI/MongoDB stack to Firebase (Firestore and Firebase Auth). The user also asked to remove the My Team feature and update the CSS with a new color scheme and font. The agent started this task by installing the  and  packages.
+    - Status: IN PROGRESS
+    - Agent Testing Done: N
+    - Which testing method agent to use? both
+    - User Testing Done: N
+
+**All Pending/In progress Issue list**:
+  - **Issue 1 (P0): Complete the migration to Firebase.** This is a large, multi-step task that will affect the entire application.
+
+  **Issues Detail:**
+  - **Issue 1:** Complete the migration from MongoDB/FastAPI to Firebase.
+     - **Attempted fixes:** The agent has only just begun by installing the necessary Python and JS libraries (, ). No code changes have been made yet.
+     - **Next debug checklist:**
+         1.  **Backend:**
+             - Create a new Firebase configuration file () using the credentials provided by the user.
+             - Refactor all backend services (, , , , , ) to replace MongoDB calls with Firestore SDK calls.
+             - Replace the custom JWT authentication with Firebase Authentication. This will impact  and user models.
+             - Update all Pydantic models to align with Firestore's data structure (documents and collections instead of BSON).
+         2.  **Frontend:**
+             - Create a Firebase initialization file in  using the  object provided by the user.
+             - Refactor all API service calls and hooks (, etc.) to use the Firebase JS SDK for authentication (, , ).
+             - Update all data-fetching logic in pages like , , , etc., to interact with Firestore directly or via new backend endpoints designed for Firebase.
+     - **Why fix this issue and what will be achieved with the fix?** This is a direct and critical request from the user to align the project with their desired technology stack. Completing this will make the application conform to the user's requirements.
+     - **Status:** IN PROGRESS
+     - **Is recurring issue?** N
+     - **Should Test frontend/backend/both after fix?** both
+     - **Blocked on other issue:** None.
+
+**In progress Task List**:
+  - **Task 1: Complete Firebase Migration and associated changes (P0)**
+     - **Where to resume:** The agent has installed  for the backend and  for the frontend. The next step is to create the Firebase configuration files in both the backend and frontend and begin refactoring the data and authentication layers.
+     - **What will be achieved with this?** The application's persistence and authentication layers will be moved from MongoDB/Custom JWT to Firebase Firestore/Auth, fulfilling a core user requirement.
+     - **Status:** IN PROGRESS
+     - **Should Test frontend/backend/both after fix?** both
+     - **Blocked on something:** No.
+
+  - **Task 2: Remove My Team feature (P1)**
+     - **Where to resume:** This task should be done alongside the Firebase migration.
+        - Remove the  file from .
+        - Remove the navigation link to Mi Equipo from the  component.
+        - Remove the corresponding route from .
+     - **What will be achieved with this?** The UI will be cleaned up as per the user's request.
+     - **Status:** NOT STARTED
+     - **Should Test frontend/backend/both after fix?** frontend
+     - **Blocked on something:** No.
+
+  - **Task 3: Update UI Design (P1)**
+     - **Where to resume:** This task should be done alongside the Firebase migration.
+        - Update the  file with the new color variables (, , etc.) and font () provided by the user.
+        - Verify that all components correctly adopt the new styling.
+     - **What will be achieved with this?** The application's visual design will match the user's latest specification.
+     - **Status:** NOT STARTED
+     - **Should Test frontend/backend/both after fix?** frontend
+     - **Blocked on something:** No.
+
+**Upcoming and Future Tasks**
+There are no new features requested. The main future task is to stabilize the application after the Firebase migration and ensure all previously implemented features work correctly with the new backend.
+
+**Completed work in this session**
+- **Application Scaffolding:** Created a full-stack React/FastAPI/MongoDB application structure.
+- **Feature Implementation (V1):**
+    - User Authentication (Register/Login)
+    - Dashboard with user balance
+    - Betting, Shop, Market, and Collection pages
+    - Admin panel for seeding data
+- **Feature Refinement (V2):**
+    - Changed **Roulette** to a functional game ().
+    - Updated **Ranking** to be based on card count and hide the admin user (, ).
+    - Set initial user balance to **100 coins** ().
+    - Added an **Admin feature** to update user balances (, ).
+    - Modified **Pack Opening** logic to allow the user to select only one card (, ).
+
+**Earlier issues found/mentioned but not fixed**
+None. A minor z-index issue with modals was found by the testing agent and was immediately fixed in the first session.
+
+**Known issue recurrence from previous fork**
+N/A
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+- **Frontend:** React, TailwindCSS, Shadcn/UI
+- **Backend:** FastAPI (Python)
+- **Database:** MongoDB (Currently being migrated to **Firebase Firestore**)
+- **Authentication:** Custom JWT (Currently being migrated to **Firebase Auth**)
+
+**key DB schema**
+The existing application uses MongoDB with Pydantic models. **This will be deprecated.**
+- **users:** {username, email, hashed_password, balance, cards, is_admin}
+- **athletes:** {name, sport}
+- **bets:** {description, odds, status}
+- **cards:** {athlete_id, rarity, owner_id}
+
+The new agent must define a new schema for **Firestore**, likely using collections for , , , and .
+
+**changes in tech stack**
+- **Database & Auth:** Major migration from **MongoDB + custom JWT** to **Firebase Firestore + Firebase Auth**.
+
+**All files of reference**
+Over 30 files were created, constituting the entire application structure. Key files to be modified for the migration include:
+- **Backend:** All files in  and .  will also need changes.
+- **Frontend:** , , all files in , and all files in .
+- **Config:** A new firebase config will be needed in both frontend and backend.  needs to be updated.
+
+**Areas that need refactoring**:
+The entire data access and authentication layer of the application (both frontend and backend) needs to be refactored to support Firebase instead of MongoDB and the custom JWT implementation.
+
+**key api endpoints**
+The existing API endpoints will need to be re-evaluated and possibly redesigned to work with Firebase.
+- 
+- 
+- 
+- 
+- 
+- (and many others for bets, packs, market, etc.)
+
+**Critical Info for New Agent**
+- The user has explicitly requested to switch the entire backend from FastAPI/MongoDB to **Firebase**. This is the highest priority.
+- The user provided the  object for the frontend. The backend will need service account credentials to use .
+- The My Team feature must be removed completely.
+- The global CSS needs to be updated with a new color palette and the 'Montserrat' font.
+- The agent must now work exclusively with Firebase SDKs for all database and authentication operations, removing all MongoDB-related code.
+
+**documents and test reports created in this job**
+- 
+- 
+- 
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User:** Requests to modify the app: make the roulette a real game, adjust the ranking logic, change the starting balance to 100, allow the admin to add money, and let users pick only one card from a pack. (Completed)
+2.  ... (Agent implements all the above changes) ...
+3.  **Agent:** Announces completion of the requested changes after successful testing. (Completed)
+4.  **User:** **(PENDING)** Asks to configure the database to Firebase, providing the  object. Also asks to remove the My Team section and change the design (CSS colors and font).
+5.  **Agent:** Acknowledges the three major changes (Firebase migration, remove My Team, update design) and starts by installing Firebase dependencies. (In Progress)
+
+**Project Health Check:**
+- **Broken:** The application is currently in a broken state due to the mid-flight migration from MongoDB to Firebase. It will not be functional until the migration is complete.
+- **Mocked:** No components are mocked.
+
+**3rd Party Integrations**
+- **Firebase:** User-requested integration. The agent has installed the required SDKs (, ) and has been provided the frontend configuration keys by the user.
+
+**Testing status**
+- Testing agent was used successfully after the last feature update on the MongoDB stack.
+- No tests have been run since the Firebase migration started.
+- Test files created: None.
+- Known regressions: The entire application is currently non-functional due to the tech stack migration.
+
+**Credentials to test flow:**
+The agent created an admin user during the initial setup. After the Firebase migration, new users (including a test admin) will need to be created in the Firebase project.
+- **Previous credentials (for MongoDB):**
+  - email: 
+  - password: 
+
+**What agent forgot to execute**
+The agent did not forget anything. It was in the process of executing a major user request (Firebase migration) when the session ended. The next agent must continue this task.</analysis>

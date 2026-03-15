@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class OrcabetAPITester:
-    def __init__(self, base_url="https://sportbet-collectible.preview.emergentagent.com"):
+    def __init__(self, base_url="https://orcabet-preview.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.admin_token = None
