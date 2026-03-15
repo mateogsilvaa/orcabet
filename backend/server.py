@@ -9,32 +9,85 @@ from pydantic import BaseModel
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
-import bcrypt
-import jwt
 import random
+import requests as http_requests
+import jwt as pyjwt
+from cryptography.x509 import load_pem_x509_certificate
+from cryptography.hazmat.backends import default_backend
+import time
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# MongoDB
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Firebase Config
+FIREBASE_API_KEY = os.environ['FIREBASE_API_KEY']
+FIREBASE_PROJECT_ID = os.environ['FIREBASE_PROJECT_ID']
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
-JWT_SECRET = os.environ.get('JWT_SECRET', 'orcabet-secret-key-2026')
-JWT_ALGORITHM = 'HS256'
+# ==================== FIREBASE AUTH HELPERS ====================
+_cached_certs = None
+_certs_expiry = 0
+
+def get_firebase_public_keys():
+    global _cached_certs, _certs_expiry
+    if _cached_certs and time.time() < _certs_expiry:
+        return _cached_certs
+    resp = http_requests.get(
+        "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com",
+        timeout=10
+    )
+    _cached_certs = resp.json()
+    _certs_expiry = time.time() + 3600
+    return _cached_certs
+
+def verify_firebase_token(id_token: str):
+    try:
+        unverified_header = pyjwt.get_unverified_header(id_token)
+        kid = unverified_header.get('kid')
+        if not kid:
+            return None
+        certs = get_firebase_public_keys()
+        cert_str = certs.get(kid)
+        if not cert_str:
+            return None
+        cert = load_pem_x509_certificate(cert_str.encode(), default_backend())
+        public_key = cert.public_key()
+        decoded = pyjwt.decode(
+            id_token,
+            public_key,
+            algorithms=['RS256'],
+            audience=FIREBASE_PROJECT_ID,
+            issuer=f"https://securetoken.google.com/{FIREBASE_PROJECT_ID}"
+        )
+        return decoded
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Firebase token verification failed: {e}")
+        return None
+
+def firebase_auth_create_user(email: str, password: str):
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
+    resp = http_requests.post(url, json={"email": email, "password": password, "returnSecureToken": True}, timeout=10)
+    if resp.status_code == 200:
+        return resp.json()
+    return None
+
+def firebase_auth_sign_in(email: str, password: str):
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+    resp = http_requests.post(url, json={"email": email, "password": password, "returnSecureToken": True}, timeout=10)
+    if resp.status_code == 200:
+        return resp.json()
+    return None
 
 # --- Pydantic Models ---
 class UserRegister(BaseModel):
-    email: str
     username: str
-    password: str
-
-class UserLogin(BaseModel):
-    email: str
-    password: str
 
 class PlaceBet(BaseModel):
     event_id: str
@@ -82,29 +135,19 @@ class PickCard(BaseModel):
 class AddBalance(BaseModel):
     amount: float
 
-# --- Auth Helpers ---
-def create_token(user_id: str, is_admin: bool = False):
-    payload = {
-        'user_id': user_id,
-        'is_admin': is_admin,
-        'exp': datetime.now(timezone.utc) + timedelta(days=7)
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-
+# --- Auth Dependencies ---
 async def get_current_user(authorization: str = Header(None)):
     if not authorization or not authorization.startswith('Bearer '):
         raise HTTPException(status_code=401, detail='Token no proporcionado')
     token = authorization.split(' ')[1]
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        user = await db.users.find_one({'id': payload['user_id']}, {'_id': 0, 'password_hash': 0})
-        if not user:
-            raise HTTPException(status_code=401, detail='Usuario no encontrado')
-        return user
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail='Token expirado')
-    except jwt.InvalidTokenError:
+    decoded = verify_firebase_token(token)
+    if not decoded:
         raise HTTPException(status_code=401, detail='Token invalido')
+    firebase_uid = decoded.get('user_id') or decoded.get('sub')
+    user = await db.users.find_one({'id': firebase_uid}, {'_id': 0})
+    if not user:
+        raise HTTPException(status_code=401, detail='Usuario no encontrado en la base de datos')
+    return user
 
 async def get_admin_user(authorization: str = Header(None)):
     user = await get_current_user(authorization)
@@ -114,41 +157,47 @@ async def get_admin_user(authorization: str = Header(None)):
 
 # ==================== AUTH ====================
 @api_router.post("/auth/register")
-async def register(data: UserRegister):
-    existing = await db.users.find_one({'email': data.email})
+async def register(data: UserRegister, authorization: str = Header(None)):
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail='Token no proporcionado')
+    token = authorization.split(' ')[1]
+    decoded = verify_firebase_token(token)
+    if not decoded:
+        raise HTTPException(status_code=401, detail='Token de Firebase invalido')
+    firebase_uid = decoded.get('user_id') or decoded.get('sub')
+    email = decoded.get('email', '')
+    existing = await db.users.find_one({'id': firebase_uid})
     if existing:
-        raise HTTPException(status_code=400, detail='Email ya registrado')
+        return {'user': {k: v for k, v in existing.items() if k != '_id'}}
     existing_name = await db.users.find_one({'username': data.username})
     if existing_name:
         raise HTTPException(status_code=400, detail='Nombre de usuario ya registrado')
-    password_hash = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
-    user_id = str(uuid.uuid4())
     user = {
-        'id': user_id,
-        'email': data.email,
+        'id': firebase_uid,
+        'email': email,
         'username': data.username,
-        'password_hash': password_hash,
         'balance': 100.0,
         'is_admin': False,
         'created_at': datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
-    token = create_token(user_id)
     return {
-        'token': token,
-        'user': {'id': user_id, 'email': data.email, 'username': data.username, 'balance': 100.0, 'is_admin': False}
+        'user': {'id': firebase_uid, 'email': email, 'username': data.username, 'balance': 100.0, 'is_admin': False}
     }
 
 @api_router.post("/auth/login")
-async def login(data: UserLogin):
-    user = await db.users.find_one({'email': data.email})
-    if not user or not bcrypt.checkpw(data.password.encode(), user['password_hash'].encode()):
-        raise HTTPException(status_code=401, detail='Credenciales invalidas')
-    token = create_token(user['id'], user.get('is_admin', False))
-    return {
-        'token': token,
-        'user': {'id': user['id'], 'email': user['email'], 'username': user['username'], 'balance': user['balance'], 'is_admin': user.get('is_admin', False)}
-    }
+async def login(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail='Token no proporcionado')
+    token = authorization.split(' ')[1]
+    decoded = verify_firebase_token(token)
+    if not decoded:
+        raise HTTPException(status_code=401, detail='Token de Firebase invalido')
+    firebase_uid = decoded.get('user_id') or decoded.get('sub')
+    user = await db.users.find_one({'id': firebase_uid}, {'_id': 0})
+    if not user:
+        raise HTTPException(status_code=404, detail='Usuario no registrado')
+    return {'user': {k: v for k, v in user.items()}}
 
 # ==================== USER ====================
 @api_router.get("/user/profile")
@@ -401,7 +450,7 @@ async def get_collection(user=Depends(get_current_user)):
 
 @api_router.get("/collection/{user_id}")
 async def get_user_collection(user_id: str):
-    target = await db.users.find_one({'id': user_id}, {'_id': 0, 'password_hash': 0, 'email': 0})
+    target = await db.users.find_one({'id': user_id}, {'_id': 0, 'email': 0})
     if not target:
         raise HTTPException(status_code=404, detail='Usuario no encontrado')
     cards = await db.user_cards.find({'user_id': user_id, 'is_listed': False}, {'_id': 0}).to_list(500)
@@ -543,7 +592,7 @@ async def play_roulette(data: RouletteBet, user=Depends(get_current_user)):
 # ==================== SOCIAL / SHOW ====================
 @api_router.get("/users/leaderboard")
 async def get_leaderboard():
-    users = await db.users.find({'is_admin': {'$ne': True}}, {'_id': 0, 'password_hash': 0, 'email': 0, 'balance': 0}).to_list(100)
+    users = await db.users.find({'is_admin': {'$ne': True}}, {'_id': 0, 'email': 0, 'balance': 0}).to_list(100)
     for u in users:
         card_count = await db.user_cards.count_documents({'user_id': u['id']})
         u['total_cards'] = card_count
@@ -552,7 +601,7 @@ async def get_leaderboard():
 
 @api_router.get("/users/{user_id}/profile")
 async def get_user_profile(user_id: str):
-    user = await db.users.find_one({'id': user_id}, {'_id': 0, 'password_hash': 0, 'email': 0})
+    user = await db.users.find_one({'id': user_id}, {'_id': 0, 'email': 0})
     if not user:
         raise HTTPException(status_code=404, detail='Usuario no encontrado')
     cards = await db.user_cards.find({'user_id': user_id, 'is_listed': False}, {'_id': 0}).to_list(500)
@@ -563,9 +612,9 @@ async def get_user_profile(user_id: str):
 @api_router.get("/users/search")
 async def search_users(q: str = ""):
     if not q:
-        users = await db.users.find({}, {'_id': 0, 'password_hash': 0, 'email': 0}).to_list(20)
+        users = await db.users.find({}, {'_id': 0, 'email': 0}).to_list(20)
     else:
-        users = await db.users.find({'username': {'$regex': q, '$options': 'i'}}, {'_id': 0, 'password_hash': 0, 'email': 0}).to_list(20)
+        users = await db.users.find({'username': {'$regex': q, '$options': 'i'}}, {'_id': 0, 'email': 0}).to_list(20)
     return users
 
 # ==================== ADMIN ====================
@@ -581,15 +630,19 @@ async def admin_stats(user=Depends(get_admin_user)):
 
 @api_router.post("/admin/seed")
 async def seed_admin():
-    existing = await db.users.find_one({'email': 'admin@orcabet.com'})
+    result = firebase_auth_create_user("admin@orcabet.com", "admin123")
+    if not result:
+        result = firebase_auth_sign_in("admin@orcabet.com", "admin123")
+    if not result:
+        raise HTTPException(status_code=500, detail='Error creando/accediendo admin en Firebase')
+    firebase_uid = result.get('localId')
+    existing = await db.users.find_one({'id': firebase_uid})
     if existing:
         return {'message': 'Admin ya existe', 'email': 'admin@orcabet.com', 'password': 'admin123'}
-    password_hash = bcrypt.hashpw('admin123'.encode(), bcrypt.gensalt()).decode()
     admin_user = {
-        'id': str(uuid.uuid4()),
+        'id': firebase_uid,
         'email': 'admin@orcabet.com',
         'username': 'AdminOrcabet',
-        'password_hash': password_hash,
         'balance': 99999.0,
         'is_admin': True,
         'created_at': datetime.now(timezone.utc).isoformat()
@@ -648,7 +701,7 @@ async def admin_add_balance(user_id: str, data: AddBalance, admin=Depends(get_ad
 
 @api_router.get("/admin/users")
 async def admin_get_users(admin=Depends(get_admin_user)):
-    users = await db.users.find({'is_admin': {'$ne': True}}, {'_id': 0, 'password_hash': 0}).to_list(100)
+    users = await db.users.find({'is_admin': {'$ne': True}}, {'_id': 0}).to_list(100)
     for u in users:
         u['total_cards'] = await db.user_cards.count_documents({'user_id': u['id']})
     return users
