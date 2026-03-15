@@ -180,8 +180,7 @@ export default function ShowPage() {
                     {u.id === currentUser?.id && <Badge className="ml-2 text-[8px] bg-primary/20 text-primary border-primary/30">Tu</Badge>}
                   </p>
                   <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-xs font-mono text-primary">{u.balance?.toLocaleString('es-ES')} monedas</span>
-                    <span className="text-xs font-mono text-gray-500">{u.total_cards || 0} cartas</span>
+                    <span className="text-xs font-mono text-[#00F3FF]"><Layers size={10} className="inline mr-1" />{u.total_cards || 0} cartas</span>
                   </div>
                 </div>
               </CardContent>

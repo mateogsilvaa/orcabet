@@ -70,6 +70,18 @@ class MarketListingCreate(BaseModel):
 class PlaceBidModel(BaseModel):
     amount: float
 
+class RouletteBet(BaseModel):
+    bet_type: str
+    bet_value: str
+    amount: float
+
+class PickCard(BaseModel):
+    pack_id: str
+    card_index: int
+
+class AddBalance(BaseModel):
+    amount: float
+
 # --- Auth Helpers ---
 def create_token(user_id: str, is_admin: bool = False):
     payload = {
@@ -116,7 +128,7 @@ async def register(data: UserRegister):
         'email': data.email,
         'username': data.username,
         'password_hash': password_hash,
-        'balance': 1000.0,
+        'balance': 100.0,
         'is_admin': False,
         'created_at': datetime.now(timezone.utc).isoformat()
     }
@@ -124,7 +136,7 @@ async def register(data: UserRegister):
     token = create_token(user_id)
     return {
         'token': token,
-        'user': {'id': user_id, 'email': data.email, 'username': data.username, 'balance': 1000.0, 'is_admin': False}
+        'user': {'id': user_id, 'email': data.email, 'username': data.username, 'balance': 100.0, 'is_admin': False}
     }
 
 @api_router.post("/auth/login")
@@ -319,7 +331,7 @@ async def buy_pack(data: BuyPack, user=Depends(get_current_user)):
     by_rarity = {}
     for a in all_athletes:
         by_rarity.setdefault(a['rarity'], []).append(a)
-    cards_obtained = []
+    cards_generated = []
     for _ in range(pack['cards']):
         rarity = pick_rarity(pack['probs'])
         pool = by_rarity.get(rarity, by_rarity.get('common', all_athletes))
@@ -327,8 +339,6 @@ async def buy_pack(data: BuyPack, user=Depends(get_current_user)):
             pool = all_athletes
         athlete = random.choice(pool)
         card = {
-            'id': str(uuid.uuid4()),
-            'user_id': user['id'],
             'athlete_id': athlete['id'],
             'athlete_name': athlete['name'],
             'athlete_position': athlete['position'],
@@ -337,13 +347,39 @@ async def buy_pack(data: BuyPack, user=Depends(get_current_user)):
             'rarity': athlete['rarity'],
             'overall_rating': athlete['overall_rating'],
             'stats': athlete['stats'],
-            'obtained_at': datetime.now(timezone.utc).isoformat(),
-            'is_listed': False
         }
-        await db.user_cards.insert_one(card)
-        cards_obtained.append({k: v for k, v in card.items() if k != '_id'})
+        cards_generated.append(card)
+    pack_id = str(uuid.uuid4())
+    await db.pending_packs.insert_one({'id': pack_id, 'user_id': user['id'], 'cards': cards_generated, 'created_at': datetime.now(timezone.utc).isoformat()})
     updated = await db.users.find_one({'id': user['id']}, {'_id': 0, 'balance': 1})
-    return {'pack_type': data.pack_type, 'cards': cards_obtained, 'new_balance': updated['balance']}
+    return {'pack_id': pack_id, 'pack_type': data.pack_type, 'cards': cards_generated, 'new_balance': updated['balance']}
+
+@api_router.post("/packs/pick")
+async def pick_card(data: PickCard, user=Depends(get_current_user)):
+    pending = await db.pending_packs.find_one({'id': data.pack_id, 'user_id': user['id']})
+    if not pending:
+        raise HTTPException(status_code=404, detail='Sobre no encontrado o ya recogido')
+    cards = pending['cards']
+    if data.card_index < 0 or data.card_index >= len(cards):
+        raise HTTPException(status_code=400, detail='Seleccion invalida')
+    chosen = cards[data.card_index]
+    card_doc = {
+        'id': str(uuid.uuid4()),
+        'user_id': user['id'],
+        'athlete_id': chosen['athlete_id'],
+        'athlete_name': chosen['athlete_name'],
+        'athlete_position': chosen['athlete_position'],
+        'athlete_team': chosen['athlete_team'],
+        'athlete_image': chosen.get('athlete_image', ''),
+        'rarity': chosen['rarity'],
+        'overall_rating': chosen['overall_rating'],
+        'stats': chosen['stats'],
+        'obtained_at': datetime.now(timezone.utc).isoformat(),
+        'is_listed': False
+    }
+    await db.user_cards.insert_one(card_doc)
+    await db.pending_packs.delete_one({'id': data.pack_id})
+    return {k: v for k, v in card_doc.items() if k != '_id'}
 
 @api_router.get("/packs/free-available")
 async def check_free_pack(user=Depends(get_current_user)):
@@ -449,16 +485,8 @@ async def cancel_listing(listing_id: str, user=Depends(get_current_user)):
     return {'message': 'Listado cancelado'}
 
 # ==================== ROULETTE ====================
-ROULETTE_PRIZES = [
-    {'label': '50', 'value': 50, 'color': '#FF6B00'},
-    {'label': '10', 'value': 10, 'color': '#3B82F6'},
-    {'label': '100', 'value': 100, 'color': '#A855F7'},
-    {'label': '25', 'value': 25, 'color': '#22C55E'},
-    {'label': '5', 'value': 5, 'color': '#6B7280'},
-    {'label': '200', 'value': 200, 'color': '#EAB308'},
-    {'label': '15', 'value': 15, 'color': '#00F3FF'},
-    {'label': '75', 'value': 75, 'color': '#EF4444'},
-]
+RED_NUMBERS = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
+BLACK_NUMBERS = {2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35}
 
 @api_router.get("/roulette/status")
 async def roulette_status(user=Depends(get_current_user)):
@@ -467,35 +495,60 @@ async def roulette_status(user=Depends(get_current_user)):
     spins_used = log['spins_used'] if log else 0
     return {'spins_remaining': max(0, 3 - spins_used), 'spins_used': spins_used}
 
-@api_router.post("/roulette/spin")
-async def spin_roulette(user=Depends(get_current_user)):
+@api_router.post("/roulette/play")
+async def play_roulette(data: RouletteBet, user=Depends(get_current_user)):
     today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     log = await db.roulette_log.find_one({'user_id': user['id'], 'date': today})
     spins_used = log['spins_used'] if log else 0
     if spins_used >= 3:
         raise HTTPException(status_code=400, detail='Sin tiradas disponibles hoy')
-    weights = [1, 4, 0.5, 2, 5, 0.2, 3, 1]
-    prize = random.choices(ROULETTE_PRIZES, weights=weights, k=1)[0]
+    if data.amount <= 0:
+        raise HTTPException(status_code=400, detail='Cantidad invalida')
+    fresh = await db.users.find_one({'id': user['id']}, {'_id': 0})
+    if fresh['balance'] < data.amount:
+        raise HTTPException(status_code=400, detail='Saldo insuficiente')
+    result_number = random.randint(0, 36)
+    result_color = 'verde' if result_number == 0 else ('rojo' if result_number in RED_NUMBERS else 'negro')
+    multiplier = 0
+    if data.bet_type == 'number':
+        if int(data.bet_value) == result_number:
+            multiplier = 35
+    elif data.bet_type == 'color' and result_number != 0:
+        if (data.bet_value == 'rojo' and result_number in RED_NUMBERS) or (data.bet_value == 'negro' and result_number in BLACK_NUMBERS):
+            multiplier = 1
+    elif data.bet_type == 'parity' and result_number != 0:
+        is_even = result_number % 2 == 0
+        if (data.bet_value == 'par' and is_even) or (data.bet_value == 'impar' and not is_even):
+            multiplier = 1
+    elif data.bet_type == 'half' and result_number != 0:
+        if (data.bet_value == '1-18' and 1 <= result_number <= 18) or (data.bet_value == '19-36' and 19 <= result_number <= 36):
+            multiplier = 1
+    elif data.bet_type == 'dozen':
+        if (data.bet_value == '1-12' and 1 <= result_number <= 12) or (data.bet_value == '13-24' and 13 <= result_number <= 24) or (data.bet_value == '25-36' and 25 <= result_number <= 36):
+            multiplier = 2
+    winnings = data.amount * multiplier
+    net = winnings - data.amount
+    await db.users.update_one({'id': user['id']}, {'$inc': {'balance': net}})
     if log:
         await db.roulette_log.update_one({'user_id': user['id'], 'date': today}, {'$inc': {'spins_used': 1}})
     else:
         await db.roulette_log.insert_one({'user_id': user['id'], 'date': today, 'spins_used': 1})
-    await db.users.update_one({'id': user['id']}, {'$inc': {'balance': prize['value']}})
     updated = await db.users.find_one({'id': user['id']}, {'_id': 0, 'balance': 1})
-    return {'prize': prize, 'new_balance': updated['balance'], 'spins_remaining': max(0, 2 - spins_used)}
-
-@api_router.get("/roulette/prizes")
-async def get_roulette_prizes():
-    return ROULETTE_PRIZES
+    return {
+        'result_number': result_number, 'result_color': result_color, 'won': multiplier > 0,
+        'multiplier': multiplier, 'winnings': winnings, 'bet_amount': data.amount,
+        'new_balance': updated['balance'], 'spins_remaining': max(0, 2 - spins_used)
+    }
 
 # ==================== SOCIAL / SHOW ====================
 @api_router.get("/users/leaderboard")
 async def get_leaderboard():
-    users = await db.users.find({}, {'_id': 0, 'password_hash': 0, 'email': 0}).sort('balance', -1).to_list(20)
+    users = await db.users.find({'is_admin': {'$ne': True}}, {'_id': 0, 'password_hash': 0, 'email': 0, 'balance': 0}).to_list(100)
     for u in users:
         card_count = await db.user_cards.count_documents({'user_id': u['id']})
         u['total_cards'] = card_count
-    return users
+    users.sort(key=lambda x: x['total_cards'], reverse=True)
+    return users[:20]
 
 @api_router.get("/users/{user_id}/profile")
 async def get_user_profile(user_id: str):
@@ -583,6 +636,22 @@ async def seed_athletes(user=Depends(get_admin_user)):
         a['created_at'] = datetime.now(timezone.utc).isoformat()
     await db.athletes.insert_many(sample)
     return {'message': f'{len(sample)} atletas creados'}
+
+@api_router.post("/admin/add-balance/{user_id}")
+async def admin_add_balance(user_id: str, data: AddBalance, admin=Depends(get_admin_user)):
+    target = await db.users.find_one({'id': user_id})
+    if not target:
+        raise HTTPException(status_code=404, detail='Usuario no encontrado')
+    await db.users.update_one({'id': user_id}, {'$inc': {'balance': data.amount}})
+    updated = await db.users.find_one({'id': user_id}, {'_id': 0, 'balance': 1})
+    return {'message': 'Balance actualizado', 'new_balance': updated['balance']}
+
+@api_router.get("/admin/users")
+async def admin_get_users(admin=Depends(get_admin_user)):
+    users = await db.users.find({'is_admin': {'$ne': True}}, {'_id': 0, 'password_hash': 0}).to_list(100)
+    for u in users:
+        u['total_cards'] = await db.user_cards.count_documents({'user_id': u['id']})
+    return users
 
 # ==================== SETUP ====================
 app.include_router(api_router)

@@ -23,6 +23,9 @@ export default function ShopPage() {
   const [openedCards, setOpenedCards] = useState([]);
   const [showOpening, setShowOpening] = useState(false);
   const [revealedIdx, setRevealedIdx] = useState(-1);
+  const [packId, setPackId] = useState(null);
+  const [pickingCard, setPickingCard] = useState(false);
+  const [allRevealed, setAllRevealed] = useState(false);
 
   useEffect(() => { checkFree(); }, []);
 
@@ -38,11 +41,13 @@ export default function ShopPage() {
     try {
       const res = await api.post('/packs/buy', { pack_type: packType });
       setOpenedCards(res.data.cards);
+      setPackId(res.data.pack_id);
       setRevealedIdx(-1);
+      setAllRevealed(false);
+      setPickingCard(false);
       setShowOpening(true);
       await refreshBalance();
       if (packType === 'free') setFreeAvailable(false);
-      toast.success('Sobre abierto!');
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error comprando sobre');
     }
@@ -50,13 +55,27 @@ export default function ShopPage() {
   };
 
   const revealNext = () => {
-    if (revealedIdx < openedCards.length - 1) {
-      setRevealedIdx(prev => prev + 1);
-    }
+    const next = revealedIdx + 1;
+    setRevealedIdx(next);
+    if (next >= openedCards.length - 1) setAllRevealed(true);
   };
 
   const revealAll = () => {
     setRevealedIdx(openedCards.length - 1);
+    setAllRevealed(true);
+  };
+
+  const pickCard = async (index) => {
+    if (!packId || pickingCard) return;
+    setPickingCard(true);
+    try {
+      await api.post('/packs/pick', { pack_id: packId, card_index: index });
+      toast.success(`Elegiste a ${openedCards[index].athlete_name}!`);
+      setShowOpening(false);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al elegir carta');
+    }
+    setPickingCard(false);
   };
 
   return (
@@ -122,12 +141,12 @@ export default function ShopPage() {
           <DialogHeader>
             <DialogTitle className="font-heading text-xl text-primary neon-text text-center">
               <Sparkles className="inline mr-2" size={20} />
-              Cartas Obtenidas
+              {allRevealed ? 'Elige 1 carta para quedarte' : 'Cartas del Sobre'}
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-wrap gap-4 justify-center py-4">
             {openedCards.map((card, idx) => (
-              <div key={card.id} className="card-flip-container" data-testid={`opened-card-${idx}`}>
+              <div key={idx} className="card-flip-container" data-testid={`opened-card-${idx}`}>
                 <div className={`card-flip-inner ${idx <= revealedIdx ? 'flipped' : ''}`}>
                   {/* Back */}
                   <div className="card-flip-front bg-[#0A0A0F] border-2 border-primary/30 rounded-xl flex items-center justify-center cursor-pointer" onClick={(e) => { e.stopPropagation(); revealNext(); }}>
@@ -138,7 +157,10 @@ export default function ShopPage() {
                   </div>
                   {/* Front (revealed) */}
                   <div className="card-flip-back">
-                    <div className={`w-full h-full rounded-xl border-2 p-3 flex flex-col items-center justify-center text-center rarity-${card.rarity}`}>
+                    <div
+                      onClick={() => allRevealed && pickCard(idx)}
+                      className={`w-full h-full rounded-xl border-2 p-3 flex flex-col items-center justify-center text-center rarity-${card.rarity} ${allRevealed ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+                    >
                       <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center mb-2">
                         <span className="font-heading text-lg font-black text-white">{card.overall_rating}</span>
                       </div>
@@ -153,6 +175,9 @@ export default function ShopPage() {
                       }`}>
                         {card.rarity === 'legendary' ? 'Legendaria' : card.rarity === 'epic' ? 'Epica' : card.rarity === 'rare' ? 'Rara' : 'Comun'}
                       </Badge>
+                      {allRevealed && (
+                        <p className="text-[8px] text-primary font-mono mt-2 animate-pulse">CLICK PARA ELEGIR</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -160,7 +185,7 @@ export default function ShopPage() {
             ))}
           </div>
           <div className="flex justify-center gap-3">
-            {revealedIdx < openedCards.length - 1 && (
+            {!allRevealed && (
               <>
                 <Button onClick={revealNext} className="bg-primary text-black font-bold" size="sm" data-testid="reveal-next-btn">
                   Revelar Siguiente
@@ -170,10 +195,8 @@ export default function ShopPage() {
                 </Button>
               </>
             )}
-            {revealedIdx >= openedCards.length - 1 && (
-              <Button onClick={() => setShowOpening(false)} className="bg-primary text-black font-bold" size="sm">
-                Cerrar
-              </Button>
+            {allRevealed && (
+              <p className="text-sm text-primary font-body font-medium animate-pulse">Haz click en la carta que quieras quedarte</p>
             )}
           </div>
         </DialogContent>

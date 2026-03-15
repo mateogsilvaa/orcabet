@@ -8,13 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Shield, Users, Target, Layers, BarChart3, Plus, Trash2, CheckCircle, XCircle, User, Swords } from 'lucide-react';
+import { Shield, Users, Target, Layers, BarChart3, Plus, Trash2, CheckCircle, XCircle, User, Swords, Coins } from 'lucide-react';
 
 export default function AdminPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
   const [athletes, setAthletes] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Event form
@@ -29,20 +30,26 @@ export default function AdminPage() {
   const [resolveEvent, setResolveEvent] = useState(null);
   const [winningOption, setWinningOption] = useState('');
 
+  // Add balance dialog
+  const [balanceUser, setBalanceUser] = useState(null);
+  const [balanceAmount, setBalanceAmount] = useState('');
+
   useEffect(() => {
     if (user?.is_admin) loadData();
   }, [user]);
 
   const loadData = async () => {
     try {
-      const [statsRes, eventsRes, athletesRes] = await Promise.all([
+      const [statsRes, eventsRes, athletesRes, usersRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/events/all'),
         api.get('/athletes'),
+        api.get('/admin/users'),
       ]);
       setStats(statsRes.data);
       setEvents(eventsRes.data);
       setAthletes(athletesRes.data);
+      setAllUsers(usersRes.data);
     } catch { /* ignore */ }
     setLoading(false);
   };
@@ -116,6 +123,17 @@ export default function AdminPage() {
     } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
   };
 
+  const addBalance = async () => {
+    if (!balanceUser || !balanceAmount) return;
+    try {
+      const res = await api.post(`/admin/add-balance/${balanceUser.id}`, { amount: Number(balanceAmount) });
+      toast.success(`Saldo actualizado: ${res.data.new_balance} monedas`);
+      setBalanceUser(null);
+      setBalanceAmount('');
+      loadData();
+    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+  };
+
   if (!user?.is_admin) {
     return (
       <div className="text-center py-16">
@@ -158,6 +176,7 @@ export default function AdminPage() {
         <TabsList className="bg-[#0A0A0F] border border-white/5">
           <TabsTrigger value="events" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-body">Eventos</TabsTrigger>
           <TabsTrigger value="athletes" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-body">Atletas</TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-body">Usuarios</TabsTrigger>
         </TabsList>
 
         {/* EVENTS TAB */}
@@ -259,6 +278,41 @@ export default function AdminPage() {
             ))}
           </div>
         </TabsContent>
+
+        {/* USERS TAB */}
+        <TabsContent value="users" className="mt-4 space-y-4">
+          <p className="text-xs font-mono text-gray-500">Gestionar saldo de jugadores</p>
+          <div className="space-y-2">
+            {allUsers.map(u => (
+              <Card key={u.id} className="bg-[#0A0A0F] border-white/5" data-testid={`admin-user-${u.id}`}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-primary font-bold text-xs">{u.username?.[0]?.toUpperCase()}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-body font-medium text-gray-200">{u.username}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono text-primary">{u.balance?.toLocaleString('es-ES')} monedas</span>
+                        <span className="text-xs font-mono text-gray-500">{u.total_cards} cartas</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button onClick={() => setBalanceUser(u)} className="bg-green-600/20 text-green-400 hover:bg-green-600/30" size="sm" data-testid={`add-balance-${u.id}`}>
+                    <Coins size={14} className="mr-1" /> Ingresar
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+            {allUsers.length === 0 && (
+              <Card className="bg-[#0A0A0F] border-white/5">
+                <CardContent className="p-8 text-center">
+                  <p className="text-gray-500 font-body">No hay usuarios registrados</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Create Event Dialog */}
@@ -354,6 +408,29 @@ export default function AdminPage() {
             ))}
             <Button onClick={handleResolve} disabled={!winningOption} className="w-full bg-green-600 text-white font-bold" data-testid="confirm-resolve-btn">
               <CheckCircle size={14} className="mr-1" /> Confirmar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Balance Dialog */}
+      <Dialog open={!!balanceUser} onOpenChange={() => setBalanceUser(null)}>
+        <DialogContent className="bg-[#0A0A0F] border-green-500/20 max-w-sm" data-testid="add-balance-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg text-white">Ingresar saldo a {balanceUser?.username}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-xs text-gray-500 font-body">Saldo actual: <span className="text-primary font-bold">{balanceUser?.balance?.toLocaleString('es-ES')}</span> monedas</p>
+            <Input
+              type="number"
+              value={balanceAmount}
+              onChange={e => setBalanceAmount(e.target.value)}
+              placeholder="Cantidad a ingresar"
+              data-testid="add-balance-amount"
+              className="bg-black/50 border-white/10 text-white"
+            />
+            <Button onClick={addBalance} disabled={!balanceAmount} className="w-full bg-green-600 text-white font-bold" data-testid="confirm-add-balance-btn">
+              <Coins size={14} className="mr-1" /> Ingresar Monedas
             </Button>
           </div>
         </DialogContent>

@@ -130,7 +130,7 @@ export default function AuthPage() {
           {!isLogin && (
             <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
               <Coins size={16} className="text-primary flex-shrink-0" />
-              <p className="text-xs text-gray-400 font-body">Recibiras <span className="text-primary font-bold">1.000 monedas</span> de bienvenida</p>
+              <p className="text-xs text-gray-400 font-body">Recibiras <span className="text-primary font-bold">100 monedas</span> de bienvenida</p>
             </div>
           )}
 
