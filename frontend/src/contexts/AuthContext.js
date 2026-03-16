@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { auth } from '@/firebase';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
 import api from '@/services/api';
 
 const AuthContext = createContext(null);
@@ -7,55 +14,42 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('orcabet_token'));
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async () => {
-    try {
-      const res = await api.get('/user/profile');
-      setUser(res.data);
-    } catch {
-      localStorage.removeItem('orcabet_token');
-      setToken(null);
-      setUser(null);
-      delete api.defaults.headers.common['Authorization'];
-    } finally {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const res = await api.get('/user/profile');
+          setUser(res.data);
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
-    }
+    });
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchProfile();
-    } else {
-      setLoading(false);
-    }
-  }, [token, fetchProfile]);
-
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    localStorage.setItem('orcabet_token', res.data.token);
-    setToken(res.data.token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-    setUser(res.data.user);
+    await signInWithEmailAndPassword(auth, email, password);
+    const res = await api.get('/user/profile');
+    setUser(res.data);
     return res.data;
   };
 
   const register = async (email, username, password) => {
-    const res = await api.post('/auth/register', { email, username, password });
-    localStorage.setItem('orcabet_token', res.data.token);
-    setToken(res.data.token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
+    await createUserWithEmailAndPassword(auth, email, password);
+    const res = await api.post('/auth/register', { username });
     setUser(res.data.user);
     return res.data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('orcabet_token');
-    setToken(null);
+  const logout = async () => {
+    await signOut(auth);
     setUser(null);
-    delete api.defaults.headers.common['Authorization'];
   };
 
   const refreshBalance = async () => {
@@ -66,7 +60,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshBalance }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshBalance }}>
       {children}
     </AuthContext.Provider>
   );

@@ -98,7 +98,7 @@ export function CardBack({ size = 'default' }) {
   return (
     <div className={`rounded-xl border-2 border-primary/30 bg-[#0A0A0F] flex items-center justify-center ${isSmall ? 'w-36 h-48' : 'w-48 h-64'}`}>
       <div className="text-center">
-        <p className="font-heading font-black text-primary text-lg neon-text">?</p>
+        <p className="font-heading font-black text-primary text-lg">?</p>
         <p className="font-heading text-[8px] text-primary/50 tracking-widest mt-1">ORCABET</p>
       </div>
     </div>

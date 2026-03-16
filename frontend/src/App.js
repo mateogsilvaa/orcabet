@@ -12,16 +12,15 @@ import RoulettePage from "@/pages/RoulettePage";
 import MarketPage from "@/pages/MarketPage";
 import ShowPage from "@/pages/ShowPage";
 import AdminPage from "@/pages/AdminPage";
-import TeamGeneratorPage from "@/pages/TeamGeneratorPage";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 font-mono text-sm tracking-widest">CARGANDO...</p>
+          <p className="text-gray-500 text-sm tracking-widest uppercase">Cargando...</p>
         </div>
       </div>
     );
@@ -43,7 +42,6 @@ function AppRoutes() {
         <Route path="mercado" element={<MarketPage />} />
         <Route path="show" element={<ShowPage />} />
         <Route path="show/:userId" element={<ShowPage />} />
-        <Route path="equipo" element={<TeamGeneratorPage />} />
         <Route path="admin" element={<AdminPage />} />
       </Route>
     </Routes>
@@ -59,10 +57,10 @@ function App() {
           position="top-right"
           toastOptions={{
             style: {
-              background: '#0A0A0F',
-              border: '1px solid rgba(255,107,0,0.3)',
+              background: '#141414',
+              border: '1px solid #333',
               color: '#f5f5f5',
-              fontFamily: 'Exo 2, sans-serif',
+              fontFamily: 'Montserrat, sans-serif',
             },
           }}
         />

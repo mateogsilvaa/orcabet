@@ -5,18 +5,9 @@
     height: 320px;
     border-radius: 50%;
     overflow: hidden;
-    border: 4px solid #FF6B00;
-    box-shadow: 0 0 40px rgba(255,107,0,0.3), inset 0 0 30px rgba(0,0,0,0.5);
+    border: 4px solid #ff5e00;
+    box-shadow: 0 0 40px rgba(255,94,0,0.3), inset 0 0 30px rgba(0,0,0,0.5);
     transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
-}
-
-.roulette-segment {
-    position: absolute;
-    width: 0;
-    height: 0;
-    top: 50%;
-    left: 50%;
-    transform-origin: 0 0;
 }
 
 .roulette-pointer {
@@ -28,9 +19,9 @@
     height: 0;
     border-left: 14px solid transparent;
     border-right: 14px solid transparent;
-    border-top: 28px solid #FF6B00;
+    border-top: 28px solid #ff5e00;
     z-index: 10;
-    filter: drop-shadow(0 0 8px rgba(255,107,0,0.8));
+    filter: drop-shadow(0 0 8px rgba(255,94,0,0.8));
 }
 
 /* Card Flip Animation */
@@ -71,68 +62,27 @@
 .rarity-epic { border-color: #A855F7; box-shadow: 0 0 15px rgba(168,85,247,0.4); }
 .rarity-legendary { border-color: #EAB308; box-shadow: 0 0 25px rgba(234,179,8,0.5); animation: glow-pulse 2s ease-in-out infinite; }
 
-/* Neon text effect */
-.neon-text {
-    text-shadow: 0 0 10px rgba(255,107,0,0.8), 0 0 20px rgba(255,107,0,0.4), 0 0 40px rgba(255,107,0,0.2);
+@keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(234,179,8,0.4); }
+    50% { box-shadow: 0 0 35px rgba(234,179,8,0.7); }
 }
 
-.neon-text-cyan {
-    text-shadow: 0 0 10px rgba(0,243,255,0.8), 0 0 20px rgba(0,243,255,0.4);
-}
-
-/* Glassmorphism card */
+/* Glass card */
 .glass-card {
-    background: rgba(10, 10, 15, 0.8);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-/* Cyber grid background */
-.cyber-grid {
-    background-image: 
-        linear-gradient(rgba(255,107,0,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,107,0,0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
-}
-
-/* Page transition */
-.page-enter {
-    opacity: 0;
-    transform: translateY(10px);
-}
-.page-enter-active {
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid #333;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
 
 /* Stat bar */
 .stat-bar {
     height: 4px;
     border-radius: 2px;
-    background: linear-gradient(90deg, #FF6B00, #FF8F00);
+    background: linear-gradient(90deg, #ff5e00, #ff8f00);
     transition: width 0.5s ease-out;
 }
 
-/* Fix dialog overlay click issues */
+/* Fix dialog overlay */
 [data-radix-portal] [data-state="open"] {
     pointer-events: auto;
-}
-
-/* Canvas team generator */
-.team-canvas-container {
-    background: linear-gradient(135deg, #050505 0%, #0a0a1a 50%, #050505 100%);
-    border: 2px solid rgba(255,107,0,0.3);
-    position: relative;
-    overflow: hidden;
-}
-.team-canvas-container::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: 
-        linear-gradient(rgba(255,107,0,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,107,0,0.03) 1px, transparent 1px);
-    background-size: 30px 30px;
-    pointer-events: none;
 }

@@ -8,9 +8,10 @@ module.exports = {
   theme: {
         extend: {
                 fontFamily: {
-                        heading: ['Orbitron', 'sans-serif'],
-                        body: ['Exo 2', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
+                        heading: ['Montserrat', 'sans-serif'],
+                        body: ['Montserrat', 'sans-serif'],
+                        mono: ['Montserrat', 'monospace'],
+                        sans: ['Montserrat', 'sans-serif'],
                 },
                 borderRadius: {
                         lg: 'var(--radius)',

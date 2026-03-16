@@ -127,14 +127,14 @@ export default function RoulettePage() {
                   return (
                     <g key={num}>
                       <path d={`M 160 160 L ${x1} ${y1} A 155 155 0 0 1 ${x2} ${y2} Z`} fill={color} stroke="#050505" strokeWidth="1" />
-                      <text x={lx} y={ly} fill="white" fontSize="9" fontWeight="bold" fontFamily="Orbitron" textAnchor="middle" dominantBaseline="central" transform={`rotate(${(startA + endA) / 2 + 90}, ${lx}, ${ly})`}>
+                      <text x={lx} y={ly} fill="white" fontSize="9" fontWeight="bold" fontFamily="Montserrat" textAnchor="middle" dominantBaseline="central" transform={`rotate(${(startA + endA) / 2 + 90}, ${lx}, ${ly})`}>
                         {num}
                       </text>
                     </g>
                   );
                 })}
                 <circle cx="160" cy="160" r="28" fill="#050505" stroke="#FF6B00" strokeWidth="2" />
-                <text x="160" y="160" fill="#FF6B00" fontSize="8" fontFamily="Orbitron" fontWeight="bold" textAnchor="middle" dominantBaseline="central">OB</text>
+                <text x="160" y="160" fill="#FF6B00" fontSize="8" fontFamily="Montserrat" fontWeight="bold" textAnchor="middle" dominantBaseline="central">OB</text>
               </svg>
             </div>
           </div>

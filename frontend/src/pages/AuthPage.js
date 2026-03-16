@@ -6,6 +6,16 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Coins, ArrowRight, UserPlus, LogIn } from 'lucide-react';
 
+const FIREBASE_ERRORS = {
+  'auth/email-already-in-use': 'Este email ya esta registrado',
+  'auth/invalid-email': 'Email no valido',
+  'auth/weak-password': 'La contrasena debe tener al menos 6 caracteres',
+  'auth/user-not-found': 'Usuario no encontrado',
+  'auth/wrong-password': 'Contrasena incorrecta',
+  'auth/invalid-credential': 'Credenciales invalidas',
+  'auth/too-many-requests': 'Demasiados intentos. Intenta mas tarde',
+};
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -29,42 +39,47 @@ export default function AuthPage() {
           return;
         }
         await register(email, username, password);
-        toast.success('Cuenta creada! Recibes 1000 monedas de regalo');
+        toast.success('Cuenta creada! Recibes 100 monedas de regalo');
       }
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error de autenticacion');
+      const code = err.code || '';
+      const msg = FIREBASE_ERRORS[code] || err.response?.data?.detail || 'Error de autenticacion';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 cyber-grid relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-[#00F3FF]/5 rounded-full blur-[100px]" />
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background */}
+      <div className="fixed inset-0 z-0">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?q=80&w=2070&auto=format&fit=crop')", transform: 'scale(1.05)' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/90 to-black/70 backdrop-blur-[4px]" />
       </div>
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-10">
-          <h1 className="font-heading text-4xl md:text-5xl font-black text-primary neon-text tracking-tighter" data-testid="auth-logo">
-            ORCABET
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight" data-testid="auth-logo">
+            ORCA<span className="text-[#ff5e00]">BET</span>
           </h1>
-          <p className="text-xs text-gray-600 font-mono tracking-[0.3em] mt-2">FANTASY ORCASITAS</p>
+          <p className="text-xs text-gray-500 tracking-[0.3em] mt-2 uppercase">Fantasy Orcasitas</p>
         </div>
 
         {/* Auth Card */}
-        <div className="glass-card rounded-2xl p-8" data-testid="auth-form-container">
-          <h2 className="font-heading text-lg font-bold text-white mb-6">
+        <div className="glass-card rounded-xl p-8" data-testid="auth-form-container">
+          <h2 className="text-lg font-bold text-white mb-6">
             {isLogin ? 'Iniciar Sesion' : 'Crear Cuenta'}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-gray-500 mb-1.5 block">
+              <label className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-1.5 block">
                 Email
               </label>
               <Input
@@ -74,13 +89,13 @@ export default function AuthPage() {
                 placeholder="tu@email.com"
                 required
                 data-testid="auth-email-input"
-                className="bg-black/50 border-white/10 text-white placeholder:text-gray-600 focus:border-primary focus:ring-primary"
+                className="bg-black/50 border-[#333] text-white placeholder:text-gray-600 focus:border-[#ff5e00] focus:ring-[#ff5e00]"
               />
             </div>
 
             {!isLogin && (
               <div>
-                <label className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-gray-500 mb-1.5 block">
+                <label className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-1.5 block">
                   Nombre de usuario
                 </label>
                 <Input
@@ -89,13 +104,13 @@ export default function AuthPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="TuAlias"
                   data-testid="auth-username-input"
-                  className="bg-black/50 border-white/10 text-white placeholder:text-gray-600 focus:border-primary focus:ring-primary"
+                  className="bg-black/50 border-[#333] text-white placeholder:text-gray-600 focus:border-[#ff5e00] focus:ring-[#ff5e00]"
                 />
               </div>
             )}
 
             <div>
-              <label className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-gray-500 mb-1.5 block">
+              <label className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-1.5 block">
                 Contrasena
               </label>
               <Input
@@ -105,7 +120,7 @@ export default function AuthPage() {
                 placeholder="********"
                 required
                 data-testid="auth-password-input"
-                className="bg-black/50 border-white/10 text-white placeholder:text-gray-600 focus:border-primary focus:ring-primary"
+                className="bg-black/50 border-[#333] text-white placeholder:text-gray-600 focus:border-[#ff5e00] focus:ring-[#ff5e00]"
               />
             </div>
 
@@ -113,7 +128,7 @@ export default function AuthPage() {
               type="submit"
               disabled={loading}
               data-testid="auth-submit-btn"
-              className="w-full bg-primary text-black font-heading font-bold uppercase tracking-widest h-11 hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(255,107,0,0.3)]"
+              className="w-full bg-[#ff5e00] text-black font-bold uppercase tracking-widest h-11 hover:bg-[#ff5e00]/90 transition-all"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -128,9 +143,9 @@ export default function AuthPage() {
           </form>
 
           {!isLogin && (
-            <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
-              <Coins size={16} className="text-primary flex-shrink-0" />
-              <p className="text-xs text-gray-400 font-body">Recibiras <span className="text-primary font-bold">100 monedas</span> de bienvenida</p>
+            <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-[#ff5e00]/5 border border-[#ff5e00]/10">
+              <Coins size={16} className="text-[#ff5e00] flex-shrink-0" />
+              <p className="text-xs text-gray-400">Recibiras <span className="text-[#ff5e00] font-bold">100 monedas</span> de bienvenida</p>
             </div>
           )}
 
@@ -138,14 +153,14 @@ export default function AuthPage() {
             <button
               onClick={() => setIsLogin(!isLogin)}
               data-testid="auth-toggle-btn"
-              className="text-sm text-gray-500 hover:text-primary transition-colors font-body"
+              className="text-sm text-gray-500 hover:text-[#ff5e00] transition-colors"
             >
               {isLogin ? 'No tienes cuenta? Registrate' : 'Ya tienes cuenta? Inicia sesion'}
             </button>
           </div>
         </div>
 
-        <p className="text-center text-[10px] text-gray-700 font-mono mt-8">
+        <p className="text-center text-[10px] text-gray-700 mt-8">
           ORCABET 2026 &middot; FANTASY ORCASITAS
         </p>
       </div>

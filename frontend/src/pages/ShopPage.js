@@ -139,7 +139,7 @@ export default function ShopPage() {
       <Dialog open={showOpening} onOpenChange={setShowOpening}>
         <DialogContent className="bg-[#0A0A0F] border-primary/20 max-w-3xl max-h-[85vh] overflow-y-auto" data-testid="pack-opening-dialog">
           <DialogHeader>
-            <DialogTitle className="font-heading text-xl text-primary neon-text text-center">
+            <DialogTitle className="font-heading text-xl text-primary text-center">
               <Sparkles className="inline mr-2" size={20} />
               {allRevealed ? 'Elige 1 carta para quedarte' : 'Cartas del Sobre'}
             </DialogTitle>
@@ -151,7 +151,7 @@ export default function ShopPage() {
                   {/* Back */}
                   <div className="card-flip-front bg-[#0A0A0F] border-2 border-primary/30 rounded-xl flex items-center justify-center cursor-pointer" onClick={(e) => { e.stopPropagation(); revealNext(); }}>
                     <div className="text-center pointer-events-none">
-                      <p className="font-heading text-3xl font-black text-primary neon-text">?</p>
+                      <p className="font-heading text-3xl font-black text-primary">?</p>
                       <p className="font-heading text-[8px] text-primary/40 tracking-widest mt-2">TOCA PARA REVELAR</p>
                     </div>
                   </div>
