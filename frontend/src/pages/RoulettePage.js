@@ -9,8 +9,8 @@ import { toast } from 'sonner';
 import { RotateCw, Zap } from 'lucide-react';
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-const WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const ROTATION_OFFSET = 87.6; // Offset calculado para sincronizar visual con lógica
+const wheelNumbers = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+const ROTATION_OFFSET = 0; // Ajustar si el 0 no queda centrado
 
 const getNumColor = (n) => n === 0 ? 'verde' : RED_NUMBERS.includes(n) ? 'rojo' : 'negro';
 const getNumBg = (n) => n === 0 ? 'bg-green-600' : RED_NUMBERS.includes(n) ? 'bg-red-600' : 'bg-[#1a1a2e]';
@@ -72,14 +72,16 @@ export default function RoulettePage() {
       if (!firebaseUser) throw new Error('Usuario no autenticado');
       const res = await playRoulette({ uid: firebaseUser.uid, bet_type: betType, bet_value: String(betValue), amount: Number(betAmount) });
       const winNum = res.result_number;
-      const idx = WHEEL_ORDER.indexOf(winNum);
-      const segAngle = 360 / 37;
-      // Ángulo del centro del segmento del número ganador (considerando que el SVG empieza en -90°)
-      const targetAngle = idx * segAngle + segAngle / 2 - 90;
-      // Aplicar offset de calibración
-      const calibratedAngle = targetAngle + ROTATION_OFFSET;
-      // Rotación total: múltiplos de 360 para el efecto + (360 - calibratedAngle) para que el número quede en el puntero
-      const newRot = wheelRotation + (5 * 360) + (360 - calibratedAngle);
+      const segAngle = 360 / 37; // ≈ 9.7297° por segmento
+      const numberIndex = wheelNumbers.indexOf(winNum);
+      
+      // Cálculo exacto: 360 - (índice * ángulo_por_segmento) + offset
+      const targetAngle = 360 - (numberIndex * segAngle) + ROTATION_OFFSET;
+      
+      // Reset de rotación: añadir vueltas completas para evitar acumulación de error
+      const baseRotation = 3600; // 10 vueltas completas
+      const newRot = baseRotation + targetAngle;
+      
       setWheelRotation(newRot);
       setTimeout(() => {
         setResult(res);
@@ -124,7 +126,7 @@ export default function RoulettePage() {
             <div className="roulette-pointer" />
             <div className="roulette-wheel" style={{ transform: `rotate(${wheelRotation}deg)` }} data-testid="roulette-wheel">
               <svg viewBox="0 0 320 320" className="w-full h-full">
-                {WHEEL_ORDER.map((num, i) => {
+                {wheelNumbers.map((num, i) => {
                   const startA = i * segAngle - 90;
                   const endA = startA + segAngle;
                   const sR = (startA * Math.PI) / 180;

@@ -566,7 +566,8 @@ export async function playRoulette({ uid, bet_type, bet_value, amount }) {
     }
 
     const winnings = amt * multiplier;
-    const net = winnings - amt;
+    const totalPayout = amt + winnings; // Apuesta + ganancia
+    const net = totalPayout - amt; // Neto para balance actual
     tx.update(uRef, { balance: increment(net) });
 
     if (logSnap.exists()) tx.update(logRef, { spins_used: increment(1) });
@@ -578,7 +579,7 @@ export async function playRoulette({ uid, bet_type, bet_value, amount }) {
       result_color,
       won: multiplier > 0,
       multiplier,
-      winnings,
+      winnings: totalPayout, // Total recibido (apuesta + premio)
       bet_amount: amt,
       spins_remaining,
     };
