@@ -66,54 +66,68 @@ export default function RoulettePage() {
       return;
     }
     
-    setSpinning(true);
-    setResult(null);
+    const betAmountNum = Number(betAmount);
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) throw new Error('Usuario no autenticado');
     
     try {
-      const firebaseUser = auth.currentUser;
-      if (!firebaseUser) throw new Error('Usuario no autenticado');
-      
-      // 1. Restar inmediatamente el monto apostado
-      await placeRouletteBet({ uid: firebaseUser.uid, amount: Number(betAmount) });
+      // PASO A: RESTAR INMEDIATAMENTE la apuesta total
+      console.log(`[PASO A] Restando apuesta de ${betAmountNum} del saldo...`);
+      await placeRouletteBet({ uid: firebaseUser.uid, amount: betAmountNum });
       refreshBalance(); // Actualizar balance inmediatamente
+      console.log(`[PASO A] Apuesta restada. Nuevo balance actualizado.`);
       
-      // 2. Obtener resultado del servidor
+      // PASO B: Bloquear todo y empezar giro
+      setSpinning(true);
+      setResult(null);
+      
+      // Obtener resultado del servidor
       const res = await playRoulette({ 
         uid: firebaseUser.uid, 
         bet_type: betType, 
         bet_value: String(betValue), 
-        amount: Number(betAmount) 
+        amount: betAmountNum 
       });
       
       const winNum = res.result_number;
       const segAngle = 360 / 37; // ≈ 9.7297° por segmento
       const numberIndex = wheelNumbers.indexOf(winNum);
       
-      // 3. Cálculo épico de rotación: (Vueltas_Base * 360) + Ángulo_Del_Numero
-      const baseRotations = 5; // Mínimo 5 vueltas para efecto épico
-      const targetAngle = 360 - (numberIndex * segAngle) + ROTATION_OFFSET;
-      const newRot = (baseRotations * 360) + targetAngle;
+      // Cálculo de sincronización: (360 - (index * segAngle)) % 360
+      const targetAngle = (360 - (numberIndex * segAngle)) % 360;
       
-      // 4. Aplicar rotación con transición suave
+      // ANIMACIÓN DE GIRO INFINITO: rotacion_actual + (10 * 360) + angulo_del_numero_premiado
+      const newRot = wheelRotation + (10 * 360) + targetAngle;
+      
+      console.log(`[GIRO] Número: ${winNum}, Índice: ${numberIndex}, Ángulo: ${targetAngle}°`);
+      console.log(`[GIRO] Rotación actual: ${wheelRotation}°, Nueva rotación: ${newRot}°`);
+      
+      // Aplicar rotación épica
       setWheelRotation(newRot);
       
-      // 5. Después de la animación (4-5 segundos)
+      // PASO C: Al detenerse (5 segundos para animación completa)
       setTimeout(() => {
         setResult(res);
         setSpinsRemaining(res.spins_remaining);
         setHistory(prev => [winNum, ...prev].slice(0, 10));
-        refreshBalance(); // Actualizar por si ganó
         
         if (res.won) {
-          toast.success(`Ganaste ${res.winnings} monedas!`);
+          // SI GANA: Sumar al saldo Monto_Apostado + (Monto_Apostado * Multiplicador)
+          const totalWin = betAmountNum + (betAmountNum * res.multiplier);
+          console.log(`[PASO C] GANÓ. Sumando ${totalWin} al saldo (apuesta: ${betAmountNum} + premio: ${betAmountNum * res.multiplier})`);
+          refreshBalance(); // Actualizar por si ganó
+          toast.success(`Ganaste ${totalWin} monedas!`);
         } else {
-          toast.error(`Perdiste ${betAmount} monedas`);
+          // SI PIERDE: No hacer nada (el dinero ya se restó en el Paso A)
+          console.log(`[PASO C] PERDIÓ. No se suma nada (apuesta ya restada en Paso A)`);
+          toast.error(`Perdiste ${betAmountNum} monedas`);
         }
         
         setSpinning(false);
-      }, 4500); // 4.5 segundos para animación épica
+      }, 5000); // 5 segundos para animación completa
       
     } catch (err) {
+      console.error(`[ERROR] ${err.message}`);
       toast.error(err?.message || 'Error al jugar');
       setSpinning(false);
     }
