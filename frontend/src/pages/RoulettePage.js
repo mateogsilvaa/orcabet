@@ -90,40 +90,30 @@ export default function RoulettePage() {
       });
       
       const winNum = res.result_number;
-      const segmentAngle = 360 / 37;
       
-      // Busca dónde está el número en la imagen
+      // 1. Array oficial
+      const wheelNumbers = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+      const segmentAngle = 360 / 37;
       const targetIndex = wheelNumbers.indexOf(winNum);
       
-      // OFFSET MANUAL: Si la imagen del 0 no está perfectamente a las 12 en punto en el archivo original
-      // CAMBIO CLAVE: El offset debe ser -15, no 15.
-      const IMAGE_OFFSET = -15 * segmentAngle; 
-      
-      // Mantenemos esto igual, el centrado visual es perfecto
+      // 2. Fórmula definitiva (Sin offset, solo ajuste de centrado perfecto)
       const CENTER_ADJUST = segmentAngle / 2;
+      const targetAngle = (360 - (targetIndex * segmentAngle) - CENTER_ADJUST) % 360;
       
-      console.log(`[OFFSET] Desfase físico corregido: ${IMAGE_OFFSET}° (-15 segmentos × 9.73°)`);
+      console.log(`[DEFINITIVO] Número: ${winNum}, Índice: ${targetIndex}, Ángulo objetivo: ${targetAngle}°`);
       console.log(`[CENTRO] Ajuste centrado: ${CENTER_ADJUST}° para centrado milimétrico`);
-       
-      // Cálculo final del ángulo
-      // Restamos de 360 porque para llevar un número de la derecha a la izquierda, la imagen debe girar al revés
-      // Restamos CENTER_ADJUST para centrar en la casilla
-      const targetAngle = (360 - (targetIndex * segmentAngle) + IMAGE_OFFSET - CENTER_ADJUST) % 360;
       
-      console.log(`[MAPEO] Número: ${winNum}, Índice: ${targetIndex}, Ángulo objetivo: ${targetAngle}°`);
-      
-      // ESTA ES LA MAGIA: Calculamos la rotación acumulada
+      // 3. Rotación absoluta fluida
       setWheelRotation(prevRotation => {
-        const currentMod = prevRotation % 360; // En qué grado (0-360) se quedó la última vez
-        let diff = targetAngle - currentMod; // Cuánto falta para llegar al nuevo objetivo
+        const currentMod = prevRotation % 360;
+        let diff = targetAngle - currentMod;
+        if (diff < 0) diff += 360;
         
-        if (diff < 0) diff += 360; // Forzamos a que la diferencia siempre sea positiva (giro hacia adelante)
+        console.log(`[ROTACIÓN] Actual: ${prevRotation}°, Módulo: ${currentMod}°, Diferencia: ${diff}°`);
         
-        console.log(`[MAPEO] Rotación actual: ${prevRotation}°, Módulo actual: ${currentMod}°, Diferencia: ${diff}°`);
-        
-        // 10 vueltas completas (3600 grados) + la distancia exacta al número
-        const newRotation = prevRotation + (360 * 10) + diff;
-        console.log(`[MAPEO] Nueva rotación: ${newRotation}°`);
+        // Sumamos 10 vueltas completas (3600 grados) + la diferencia exacta
+        const newRotation = prevRotation + 3600 + diff;
+        console.log(`[ROTACIÓN] Nueva rotación: ${newRotation}°`);
         
         return newRotation;
       });
