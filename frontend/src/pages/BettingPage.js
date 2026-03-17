@@ -20,33 +20,76 @@ export default function BettingPage() {
   const [placing, setPlacing] = useState(false);
   const [slipOpen, setSlipOpen] = useState(true);
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const firebaseUser = auth.currentUser;
-      console.log("Cargando datos para usuario:", firebaseUser?.uid);
+  useEffect(() => {
+    setLoading(true);
+    
+    // Suscribirse a eventos en tiempo real
+    const eventsQuery = query(collection(db, 'events'), orderBy('created_at', 'desc'), limit(100));
+    
+    const unsubscribeEvents = onSnapshot(eventsQuery,
+      (snapshot) => {
+        try {
+          const eventsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          console.log("Eventos recibidos:", eventsData?.length || 0);
+          setEvents(eventsData || []);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error procesando eventos:", error);
+          setEvents([]);
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Error en onSnapshot de events:', error);
+        setEvents([]);
+        setLoading(false);
+      }
+    );
+    
+    // Suscribirse a apuestas del usuario en tiempo real
+    const firebaseUser = auth.currentUser;
+    if (firebaseUser) {
+      const betsQuery = query(
+        collection(db, 'bets'),
+        where('user_id', '==', firebaseUser.uid),
+        orderBy('created_at', 'desc'),
+        limit(100)
+      );
       
-      const [eventsData, betsData] = await Promise.all([
-        listEvents(),
-        firebaseUser ? listMyBets(firebaseUser.uid) : Promise.resolve([]),
-      ]);
+      const unsubscribeBets = onSnapshot(betsQuery,
+        (snapshot) => {
+          try {
+            const betsData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            console.log("Apuestas recibidas:", betsData?.length || 0);
+            setMyBets(betsData || []);
+            setLoading(false);
+          } catch (error) {
+            console.error("Error procesando apuestas:", error);
+            setMyBets([]);
+            setLoading(false);
+          }
+        },
+        (error) => {
+          console.error('Error en onSnapshot de bets:', error);
+          setMyBets([]);
+          setLoading(false);
+        }
+      );
       
-      console.log("Eventos recibidos:", eventsData?.length || 0);
-      console.log("Apuestas recibidas:", betsData?.length || 0);
-      
-      setEvents(eventsData || []);
-      setMyBets(betsData || []);
-    } catch (error) {
-      console.error("Error cargando datos:", error);
-      toast.error('Error cargando datos');
-      setEvents([]);
-      setMyBets([]);
-    } finally {
-      setLoading(false);
+      return () => {
+        unsubscribeEvents();
+        unsubscribeBets();
+      };
+    } else {
+      return () => unsubscribeEvents();
     }
-  };
+  }, []);
 
   const selectOption = (event, option) => {
     setBetSlip({ event, option });
@@ -63,6 +106,8 @@ export default function BettingPage() {
     try {
       const firebaseUser = auth.currentUser;
       if (!firebaseUser) throw new Error('Usuario no autenticado');
+      
+      // Realizar apuesta - onSnapshot actualizará automáticamente
       await placeBet({
         uid: firebaseUser.uid,
         username: user?.username,
@@ -70,15 +115,21 @@ export default function BettingPage() {
         option_name: betSlip.option.name,
         amount: Number(betAmount),
       });
+      
+      // Solo mostrar toast y resetear formulario una vez
       toast.success('Apuesta realizada!');
       setBetSlip(null);
       setBetAmount('');
       await refreshBalance();
-      loadData();
+      
+      // NO llamar a loadData() - onSnapshot maneja las actualizaciones
+      
     } catch (err) {
+      console.error('Error al realizar apuesta:', err);
       toast.error(err?.message || 'Error al apostar');
+    } finally {
+      setPlacing(false);
     }
-    setPlacing(false);
   };
 
   const betStatusConfig = {
@@ -248,7 +299,7 @@ export default function BettingPage() {
                   Cancelar
                 </Button>
                 <Button
-                  onClick={placeBet}
+                  onClick={() => placeBet()}
                   disabled={placing || !betAmount}
                   data-testid="place-bet-btn"
                   className="flex-1 bg-primary text-black font-bold"
