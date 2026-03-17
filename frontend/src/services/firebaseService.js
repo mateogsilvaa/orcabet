@@ -16,6 +16,7 @@ import {
   runTransaction,
   serverTimestamp,
   increment,
+  onSnapshot,
 } from 'firebase/firestore';
 
 // =========================
@@ -234,6 +235,18 @@ export async function placeBet({ uid, username, event_id, option_name, amount })
 // =========================
 // ATHLETES
 // =========================
+export function subscribeToAthletes(callback) {
+  const q = query(athletesCol(), orderBy('created_at', 'desc'));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const athletes = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    callback(athletes);
+  }, (error) => {
+    console.error('Error en subscribeToAthletes:', error);
+    callback([]);
+  });
+  return unsubscribe;
+}
+
 export async function listAthletes() {
   try {
     const snap = await getDocs(query(athletesCol(), orderBy('created_at', 'desc')));
@@ -361,26 +374,30 @@ export async function pickCard({ uid, pack_id, card_index }) {
   });
 }
 
-export async function getMyCollection(uid) {
-  try {
-    const [cardsSnap, athletesSnap] = await Promise.all([
-      getDocs(query(userCardsCol(uid), where('is_listed', '==', false), limit(500))),
-      getDocs(query(athletesCol(), limit(1000))),
-    ]);
-
-    const cards = cardsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const total_athletes = athletesSnap.size;
-    const unique_ids = new Set(cards.map(c => c.athlete_id));
-    return {
-      cards,
-      total_unique: unique_ids.size,
-      total_athletes,
-      total_cards: cards.length,
-      duplicates: cards.length - unique_ids.size,
-    };
-  } catch {
-    return { cards: [], total_unique: 0, total_athletes: 0, total_cards: 0, duplicates: 0 };
-  }
+export function subscribeToMyCollection(uid, callback) {
+  const q = query(userCardsCol(uid), where('is_listed', '==', false), limit(500));
+  const unsubscribe = onSnapshot(q, async (cardsSnapshot) => {
+    try {
+      const athletesSnap = await getDocs(query(athletesCol(), limit(1000)));
+      const cards = cardsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const total_athletes = athletesSnap.size;
+      const unique_ids = new Set(cards.map(c => c.athlete_id));
+      callback({
+        cards,
+        total_unique: unique_ids.size,
+        total_athletes,
+        total_cards: cards.length,
+        duplicates: cards.length - unique_ids.size,
+      });
+    } catch (error) {
+      console.error('Error en subscribeToMyCollection:', error);
+      callback({ cards: [], total_unique: 0, total_athletes: 0, total_cards: 0, duplicates: 0 });
+    }
+  }, (error) => {
+    console.error('Error en subscribeToMyCollection:', error);
+    callback({ cards: [], total_unique: 0, total_athletes: 0, total_cards: 0, duplicates: 0 });
+  });
+  return unsubscribe;
 }
 
 export async function getUserCollectionProfile(userId) {
@@ -400,6 +417,18 @@ export async function getUserCollectionProfile(userId) {
 // =========================
 // MARKET
 // =========================
+export function subscribeToMarketListings(callback) {
+  const q = query(marketCol(), where('status', '==', 'active'), orderBy('created_at', 'desc'), limit(200));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const listings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    callback(listings);
+  }, (error) => {
+    console.error('Error en subscribeToMarketListings:', error);
+    callback([]);
+  });
+  return unsubscribe;
+}
+
 export async function listMarketListings() {
   try {
     const snap = await getDocs(query(marketCol(), where('status', '==', 'active'), orderBy('created_at', 'desc'), limit(200)));

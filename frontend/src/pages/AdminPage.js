@@ -4,6 +4,7 @@ import {
   getAdminStats,
   listEvents,
   listAthletes,
+  subscribeToAthletes,
   createEvent as createEventSvc,
   resolveEvent as resolveEventSvc,
   closeEvent as closeEventSvc,
@@ -46,7 +47,18 @@ export default function AdminPage() {
   const [balanceAmount, setBalanceAmount] = useState('');
 
   useEffect(() => {
-    if (user?.is_admin) loadData();
+    if (user?.is_admin) {
+      loadData();
+      
+      // Suscribirse a atletas en tiempo real
+      const unsubscribeAthletes = subscribeToAthletes((athletesData) => {
+        setAthletes(athletesData);
+      });
+      
+      return () => {
+        unsubscribeAthletes(); // Cleanup al desmontar
+      };
+    }
   }, [user]);
 
   const loadData = async () => {

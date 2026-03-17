@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/firebase';
 import {
-  listMarketListings,
+  subscribeToMarketListings,
   getMyCollection,
+  subscribeToMyCollection,
   listCardOnMarket,
   buyListing as buyListingService,
   placeBid as placeBidService,
@@ -38,7 +39,24 @@ export default function MarketPage() {
   const [bidAmount, setBidAmount] = useState('');
   const [bidDialog, setBidDialog] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    
+    // Suscribirse a datos en tiempo real
+    const unsubscribeMarket = subscribeToMarketListings((listingsData) => {
+      setListings(listingsData);
+    });
+    
+    const unsubscribeCollection = subscribeToMyCollection(firebaseUser.uid, (collectionData) => {
+      setMyCards(collectionData.cards);
+    });
+    
+    return () => {
+      unsubscribeMarket(); // Cleanup
+      unsubscribeCollection(); // Cleanup
+    };
+  }, []);
 
   const loadData = async () => {
     try {

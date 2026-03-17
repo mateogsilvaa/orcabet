@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/firebase';
-import { getMyCollection } from '@/services/firebaseService';
+import { getMyCollection, subscribeToMyCollection } from '@/services/firebaseService';
 import { AthleteCard } from '@/components/AthleteCard';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,20 @@ export default function CollectionPage() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  useEffect(() => { loadCollection(); }, []);
+  useEffect(() => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    
+    // Suscribirse a la colección en tiempo real
+    const unsubscribe = subscribeToMyCollection(firebaseUser.uid, (collectionData) => {
+      setCollection(collectionData);
+      setLoading(false);
+    });
+    
+    return () => {
+      unsubscribe(); // Cleanup al desmontar
+    };
+  }, []);
 
   const loadCollection = async () => {
     try {
