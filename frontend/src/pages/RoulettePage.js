@@ -10,7 +10,7 @@ import { RotateCw, Zap } from 'lucide-react';
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const wheelNumbers = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
-const ROTATION_OFFSET = 0; // Ajustar si el 0 no queda centrado
+const OFFSET = 0; // Ajustar si el 0 no queda centrado bajo la flecha
 
 const getNumColor = (n) => n === 0 ? 'verde' : RED_NUMBERS.includes(n) ? 'rojo' : 'negro';
 const getNumBg = (n) => n === 0 ? 'bg-green-600' : RED_NUMBERS.includes(n) ? 'bg-red-600' : 'bg-[#1a1a2e]';
@@ -55,9 +55,9 @@ export default function RoulettePage() {
   };
 
   const getMultiplierLabel = () => {
-    if (betType === 'number') return 'x35';
-    if (betType === 'dozen') return 'x2';
-    return 'x1';
+    if (betType === 'number') return 'x36';
+    if (betType === 'dozen') return 'x3';
+    return 'x2';
   };
 
   const play = async () => {
@@ -93,13 +93,13 @@ export default function RoulettePage() {
       const segAngle = 360 / 37; // ≈ 9.7297° por segmento
       const numberIndex = wheelNumbers.indexOf(winNum);
       
-      // Cálculo de sincronización: (360 - (index * segAngle)) % 360
-      const targetAngle = (360 - (numberIndex * segAngle)) % 360;
+      // Lógica del ángulo base: (wheelNumbers.indexOf(winningNumber) * (360 / 37))
+      const baseAngle = numberIndex * segAngle;
       
-      // ANIMACIÓN DE GIRO INFINITO: rotacion_actual + (10 * 360) + angulo_del_numero_premiado
-      const newRot = wheelRotation + (10 * 360) + targetAngle;
+      // Como la ruleta gira en sentido horario, restamos de las vueltas totales
+      const newRot = wheelRotation + (10 * 360) - baseAngle + OFFSET;
       
-      console.log(`[GIRO] Número: ${winNum}, Índice: ${numberIndex}, Ángulo: ${targetAngle}°`);
+      console.log(`[GIRO] Número: ${winNum}, Índice: ${numberIndex}, Ángulo base: ${baseAngle}°`);
       console.log(`[GIRO] Rotación actual: ${wheelRotation}°, Nueva rotación: ${newRot}°`);
       
       // Aplicar rotación épica
@@ -262,29 +262,29 @@ export default function RoulettePage() {
                   disabled={spinning}
                   className={`py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'dozen' && betValue === d.v ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}
                 >
-                  {d.l} <span className="text-[8px] sm:text-[9px] text-gray-600">(x2)</span>
+                  {d.l} <span className="text-[8px] sm:text-[9px] text-gray-600">(x3)</span>
                 </button>
               ))}
             </div>
             {/* Color, Parity, Half */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-2">
               <button onClick={() => selectBet('color', 'rojo')} data-testid="bet-color-rojo" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'color' && betValue === 'rojo' ? 'bg-red-600 text-white ring-2 ring-primary' : 'bg-red-600/30 text-red-400 hover:bg-red-600/50'}`}>
-                Rojo <span className="text-[8px] sm:text-[9px] opacity-60">(x1)</span>
+                Rojo <span className="text-[8px] sm:text-[9px] opacity-60">(x2)</span>
               </button>
               <button onClick={() => selectBet('color', 'negro')} data-testid="bet-color-negro" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'color' && betValue === 'negro' ? 'bg-[#1a1a2e] text-white ring-2 ring-primary' : 'bg-[#1a1a2e]/60 text-gray-300 hover:bg-[#1a1a2e]'}`}>
-                Negro <span className="text-[8px] sm:text-[9px] opacity-60">(x1)</span>
+                Negro <span className="text-[8px] sm:text-[9px] opacity-60">(x2)</span>
               </button>
               <button onClick={() => selectBet('parity', 'par')} data-testid="bet-parity-par" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'parity' && betValue === 'par' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
-                Par <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
+                Par <span className="text-[8px] sm:text-[9px] text-gray-600">(x2)</span>
               </button>
               <button onClick={() => selectBet('parity', 'impar')} data-testid="bet-parity-impar" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'parity' && betValue === 'impar' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
-                Impar <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
+                Impar <span className="text-[8px] sm:text-[9px] text-gray-600">(x2)</span>
               </button>
               <button onClick={() => selectBet('half', '1-18')} data-testid="bet-half-1-18" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'half' && betValue === '1-18' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
-                1-18 <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
+                1-18 <span className="text-[8px] sm:text-[9px] text-gray-600">(x2)</span>
               </button>
               <button onClick={() => selectBet('half', '19-36')} data-testid="bet-half-19-36" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'half' && betValue === '19-36' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
-                19-36 <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
+                19-36 <span className="text-[8px] sm:text-[9px] text-gray-600">(x2)</span>
               </button>
             </div>
           </div>

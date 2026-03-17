@@ -565,16 +565,16 @@ export async function playRoulette({ uid, bet_type, bet_value, amount }) {
 
     let multiplier = 0;
     if (bet_type === 'number') {
-      if (Number(bet_value) === result_number) multiplier = 35;
+      if (Number(bet_value) === result_number) multiplier = 36; // x36 (apuesta + 35x apuesta)
     } else if (bet_type === 'color' && result_number !== 0) {
-      if ((bet_value === 'rojo' && RED_NUMBERS_SET.has(result_number)) || (bet_value === 'negro' && BLACK_NUMBERS_SET.has(result_number))) multiplier = 1;
+      if ((bet_value === 'rojo' && RED_NUMBERS_SET.has(result_number)) || (bet_value === 'negro' && BLACK_NUMBERS_SET.has(result_number))) multiplier = 2; // x2 (apuesta + 1x apuesta)
     } else if (bet_type === 'parity' && result_number !== 0) {
       const is_even = result_number % 2 === 0;
-      if ((bet_value === 'par' && is_even) || (bet_value === 'impar' && !is_even)) multiplier = 1;
+      if ((bet_value === 'par' && is_even) || (bet_value === 'impar' && !is_even)) multiplier = 2; // x2 (apuesta + 1x apuesta)
     } else if (bet_type === 'half' && result_number !== 0) {
-      if ((bet_value === '1-18' && result_number >= 1 && result_number <= 18) || (bet_value === '19-36' && result_number >= 19 && result_number <= 36)) multiplier = 1;
+      if ((bet_value === '1-18' && result_number >= 1 && result_number <= 18) || (bet_value === '19-36' && result_number >= 19 && result_number <= 36)) multiplier = 2; // x2 (apuesta + 1x apuesta)
     } else if (bet_type === 'dozen') {
-      if ((bet_value === '1-12' && result_number >= 1 && result_number <= 12) || (bet_value === '13-24' && result_number >= 13 && result_number <= 24) || (bet_value === '25-36' && result_number >= 25 && result_number <= 36)) multiplier = 2;
+      if ((bet_value === '1-12' && result_number >= 1 && result_number <= 12) || (bet_value === '13-24' && result_number >= 13 && result_number <= 24) || (bet_value === '25-36' && result_number >= 25 && result_number <= 36)) multiplier = 3; // x3 (apuesta + 2x apuesta)
     }
 
     const winnings = amt * multiplier;
