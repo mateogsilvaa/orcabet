@@ -33,17 +33,16 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<DashboardPage />} />
-        <Route path="apuestas" element={<BettingPage />} />
-        <Route path="tienda" element={<ShopPage />} />
-        <Route path="coleccion" element={<CollectionPage />} />
-        <Route path="ruleta" element={<RoulettePage />} />
-        <Route path="mercado" element={<MarketPage />} />
-        <Route path="show" element={<ShowPage />} />
-        <Route path="show/:userId" element={<ShowPage />} />
-        <Route path="admin" element={<AdminPage />} />
-      </Route>
+      <Route path="/" element={<ProtectedRoute><Layout><DashboardPage /></Layout></ProtectedRoute>} />
+      <Route path="/apuestas" element={<ProtectedRoute><Layout><BettingPage /></Layout></ProtectedRoute>} />
+      <Route path="/tienda" element={<ProtectedRoute><Layout><ShopPage /></Layout></ProtectedRoute>} />
+      <Route path="/coleccion" element={<ProtectedRoute><Layout><CollectionPage /></Layout></ProtectedRoute>} />
+      <Route path="/ruleta" element={<ProtectedRoute><Layout><RoulettePage /></Layout></ProtectedRoute>} />
+      <Route path="/mercado" element={<ProtectedRoute><Layout><MarketPage /></Layout></ProtectedRoute>} />
+      <Route path="/show" element={<ProtectedRoute><Layout><ShowPage /></Layout></ProtectedRoute>} />
+      <Route path="/show/:userId" element={<ProtectedRoute><Layout><ShowPage /></Layout></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute><Layout><AdminPage /></Layout></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

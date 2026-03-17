@@ -1,8 +1,8 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Home, Target, ShoppingBag, Store, Layers, RotateCw, Users, Shield, LogOut, Coins } from 'lucide-react';
 
-export default function Layout() {
+export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -97,7 +97,7 @@ export default function Layout() {
         </div>
 
         <div className="p-4 md:p-8 pb-24 md:pb-8 min-h-screen">
-          <Outlet />
+          {children}
         </div>
 
         {/* Mobile Bottom Nav */}
