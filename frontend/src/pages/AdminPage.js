@@ -12,6 +12,7 @@ import {
   createAthlete as createAthleteSvc,
   deleteAthlete as deleteAthleteSvc,
   adminAddBalance,
+  unlockFreePackGlobal,
 } from '@/services/firebaseService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,9 @@ export default function AdminPage() {
   // Add balance dialog
   const [balanceUser, setBalanceUser] = useState(null);
   const [balanceAmount, setBalanceAmount] = useState('');
+  
+  // Free pack global state
+  const [giftingFreePack, setGiftingFreePack] = useState(false);
 
   useEffect(() => {
     if (user?.is_admin) {
@@ -146,11 +150,25 @@ export default function AdminPage() {
   };
 
   const deleteAthlete = async (id) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este atleta?')) return;
     try {
       await deleteAthleteSvc(id);
       toast.success('Atleta eliminado');
       loadData();
     } catch (err) { toast.error(err?.message || 'Error'); }
+  };
+
+  const giftFreePackToAll = async () => {
+    if (!confirm('¿Estás seguro de que quieres regalar un sobre gratis a TODOS los usuarios?')) return;
+    try {
+      setGiftingFreePack(true);
+      const result = await unlockFreePackGlobal();
+      toast.success(`¡Sobre gratis regalado a ${result.updatedUsers} usuarios!`);
+    } catch (err) {
+      toast.error(err?.message || 'Error al regalar sobre gratis');
+    } finally {
+      setGiftingFreePack(false);
+    }
   };
 
   const addBalance = async () => {
@@ -214,6 +232,15 @@ export default function AdminPage() {
           <div className="flex gap-2">
             <Button onClick={() => setShowEventDialog(true)} className="bg-primary text-black font-bold" size="sm" data-testid="create-event-btn">
               <Plus size={14} className="mr-1" /> Crear Evento
+            </Button>
+            <Button 
+              onClick={giftFreePackToAll} 
+              disabled={giftingFreePack}
+              className="bg-green-600 text-white font-bold" 
+              size="sm"
+              data-testid="gift-free-pack-btn"
+            >
+              🎁 {giftingFreePack ? 'Regalando...' : 'Regalar Sobre a Todos'}
             </Button>
           </div>
           <div className="space-y-2">

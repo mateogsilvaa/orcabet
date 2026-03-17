@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { ShoppingBag, Gift, Coins, Sparkles, Crown, Star } from 'lucide-react';
 
 const PACKS = [
-  { id: 'free', name: 'Sobre Gratis', desc: 'Un sobre diario gratuito', price: 0, cards: 1, icon: Gift, color: 'text-green-400', border: 'border-green-500/30 hover:border-green-500/50', bg: 'from-green-900/20 to-green-950/40' },
+  { id: 'free', name: 'Sobre Gratis', desc: 'Disponible cuando el admin lo regale', price: 0, cards: 1, icon: Gift, color: 'text-green-400', border: 'border-green-500/30 hover:border-green-500/50', bg: 'from-green-900/20 to-green-950/40' },
   { id: 'basic', name: 'Sobre Basico', desc: '3 cartas con probabilidad estandar', price: 100, cards: 3, icon: ShoppingBag, color: 'text-gray-400', border: 'border-gray-500/30 hover:border-gray-500/50', bg: 'from-gray-800/20 to-gray-900/40' },
   { id: 'gold', name: 'Sobre Oro', desc: '5 cartas con mejor probabilidad', price: 250, cards: 5, icon: Star, color: 'text-yellow-400', border: 'border-yellow-500/30 hover:border-yellow-500/50', bg: 'from-yellow-900/20 to-yellow-950/40' },
   { id: 'premium', name: 'Sobre Premium', desc: '5 cartas con maxima probabilidad', price: 500, cards: 5, icon: Crown, color: 'text-purple-400', border: 'border-purple-500/30 hover:border-purple-500/50', bg: 'from-purple-900/20 to-purple-950/40' },
@@ -131,7 +131,7 @@ export default function ShopPage() {
                   {buying === pack.id ? (
                     <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                   ) : pack.id === 'free' && !freeAvailable ? (
-                    'Reclamado'
+                    'No Disponible'
                   ) : (
                     'Abrir'
                   )}

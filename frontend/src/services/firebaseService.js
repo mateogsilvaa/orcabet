@@ -17,6 +17,7 @@ import {
   serverTimestamp,
   increment,
   onSnapshot,
+  writeBatch,
 } from 'firebase/firestore';
 
 // =========================
@@ -287,9 +288,30 @@ export const PACK_CONFIG = {
 export async function checkFreePackAvailable(uid) {
   const snap = await getDoc(userDoc(uid));
   if (!snap.exists()) return false;
-  const last = snap.data().last_free_pack_date;
-  const today = todayKeyUtc();
-  return last !== today;
+  return snap.data().hasFreePack === true;
+}
+
+export async function unlockFreePackGlobal() {
+  try {
+    // Obtener todos los usuarios
+    const usersSnap = await getDocs(query(collection(db, 'users')));
+    
+    // Crear batch para actualizar todos los usuarios
+    const batch = writeBatch(db);
+    
+    usersSnap.docs.forEach((userDoc) => {
+      const userRef = doc(db, 'users', userDoc.id);
+      batch.update(userRef, { hasFreePack: true });
+    });
+    
+    // Ejecutar batch
+    await batch.commit();
+    
+    return { success: true, updatedUsers: usersSnap.size };
+  } catch (error) {
+    console.error('Error en unlockFreePackGlobal:', error);
+    throw new Error('No se pudo regalar el sobre gratis a todos los usuarios');
+  }
 }
 
 export async function buyPack({ uid, pack_type }) {
@@ -331,9 +353,9 @@ export async function buyPack({ uid, pack_type }) {
     const u = uSnap.data();
 
     if (pack_type === 'free') {
-      const last = u.last_free_pack_date;
-      if (last === today) throw new Error('Ya reclamaste tu sobre gratis hoy');
-      tx.update(uRef, { last_free_pack_date: today });
+      const hasFreePack = u.hasFreePack;
+      if (!hasFreePack) throw new Error('No tienes un sobre gratis disponible');
+      tx.update(uRef, { hasFreePack: false }); // Consumir el sobre gratis
     } else {
       if (Number(u.balance || 0) < Number(pack.price)) throw new Error('Saldo insuficiente');
       tx.update(uRef, { balance: increment(-Number(pack.price)) });
