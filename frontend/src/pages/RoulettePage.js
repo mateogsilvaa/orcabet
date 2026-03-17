@@ -96,13 +96,20 @@ export default function RoulettePage() {
       const targetIndex = wheelNumbers.indexOf(winNum);
       
       // OFFSET MANUAL: Si la imagen del 0 no está perfectamente a las 12 en punto en el archivo original
-      // Desfase exacto medido: 22 posiciones
-      const IMAGE_OFFSET = 22 * (360 / 37);
-      console.log(`[OFFSET] Desfase calculado: ${IMAGE_OFFSET}° (22 segmentos × 9.73°)`);
+      // 1. Desfase exacto de la imagen (22 posiciones)
+      const IMAGE_OFFSET = 22 * segmentAngle; 
       
-      // El ángulo absoluto (0-360) donde DEBE detenerse la ruleta
+      // 2. Ajuste para que caiga en el centro de la casilla y no en la línea
+      const CENTER_ADJUST = segmentAngle / 2;
+      
+      console.log(`[OFFSET] Desfase calculado: ${IMAGE_OFFSET}° (22 segmentos × 9.73°)`);
+
+      console.log(`[CENTRO] Ajuste centrado: ${CENTER_ADJUST}° para centrado milimétrico`);
+       
+      // 3. Cálculo final del ángulo
       // Restamos de 360 porque para llevar un número de la derecha a la izquierda, la imagen debe girar al revés
-      const targetAngle = (360 - (targetIndex * segmentAngle) + IMAGE_OFFSET) % 360;
+      // Restamos CENTER_ADJUST para centrar en la casilla
+      const targetAngle = (360 - (targetIndex * segmentAngle) + IMAGE_OFFSET - CENTER_ADJUST) % 360;
       
       console.log(`[MAPEO] Número: ${winNum}, Índice: ${targetIndex}, Ángulo objetivo: ${targetAngle}°`);
       
