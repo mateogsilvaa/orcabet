@@ -96,7 +96,8 @@ export default function RoulettePage() {
       const targetIndex = wheelNumbers.indexOf(winNum);
       
       // OFFSET MANUAL: Si la imagen del 0 no está perfectamente a las 12 en punto en el archivo original
-      const IMAGE_OFFSET = 0;
+      // Desfase exacto medido: 22 posiciones
+      const IMAGE_OFFSET = 22 * (360 / 37);
       
       // El ángulo absoluto (0-360) donde DEBE detenerse la ruleta
       // Restamos de 360 porque para llevar un número de la derecha a la izquierda, la imagen debe girar al revés
