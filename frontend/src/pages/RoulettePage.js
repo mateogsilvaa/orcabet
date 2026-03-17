@@ -90,20 +90,35 @@ export default function RoulettePage() {
       });
       
       const winNum = res.result_number;
-      const segAngle = 360 / 37; // ≈ 9.7297° por segmento
-      const numberIndex = wheelNumbers.indexOf(winNum);
+      const segmentAngle = 360 / 37;
       
-      // Lógica del ángulo base: (wheelNumbers.indexOf(winningNumber) * (360 / 37))
-      const baseAngle = numberIndex * segAngle;
+      // Busca dónde está el número en la imagen
+      const targetIndex = wheelNumbers.indexOf(winNum);
       
-      // Como la ruleta gira en sentido horario, restamos de las vueltas totales
-      const newRot = wheelRotation + (10 * 360) - baseAngle + OFFSET;
+      // OFFSET MANUAL: Si la imagen del 0 no está perfectamente a las 12 en punto en el archivo original
+      const IMAGE_OFFSET = 0;
       
-      console.log(`[GIRO] Número: ${winNum}, Índice: ${numberIndex}, Ángulo base: ${baseAngle}°`);
-      console.log(`[GIRO] Rotación actual: ${wheelRotation}°, Nueva rotación: ${newRot}°`);
+      // El ángulo absoluto (0-360) donde DEBE detenerse la ruleta
+      // Restamos de 360 porque para llevar un número de la derecha a la izquierda, la imagen debe girar al revés
+      const targetAngle = (360 - (targetIndex * segmentAngle) + IMAGE_OFFSET) % 360;
       
-      // Aplicar rotación épica
-      setWheelRotation(newRot);
+      console.log(`[MAPEO] Número: ${winNum}, Índice: ${targetIndex}, Ángulo objetivo: ${targetAngle}°`);
+      
+      // ESTA ES LA MAGIA: Calculamos la rotación acumulada
+      setWheelRotation(prevRotation => {
+        const currentMod = prevRotation % 360; // En qué grado (0-360) se quedó la última vez
+        let diff = targetAngle - currentMod; // Cuánto falta para llegar al nuevo objetivo
+        
+        if (diff < 0) diff += 360; // Forzamos a que la diferencia siempre sea positiva (giro hacia adelante)
+        
+        console.log(`[MAPEO] Rotación actual: ${prevRotation}°, Módulo actual: ${currentMod}°, Diferencia: ${diff}°`);
+        
+        // 10 vueltas completas (3600 grados) + la distancia exacta al número
+        const newRotation = prevRotation + (360 * 10) + diff;
+        console.log(`[MAPEO] Nueva rotación: ${newRotation}°`);
+        
+        return newRotation;
+      });
       
       // PASO C: Al detenerse (5 segundos para animación completa)
       setTimeout(() => {
@@ -159,7 +174,7 @@ export default function RoulettePage() {
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="roulette-pointer" />
-            <div className="roulette-wheel" style={{ transform: `rotate(${wheelRotation}deg)` }} data-testid="roulette-wheel">
+            <div className="roulette-wheel" style={{ transform: `rotate(${wheelRotation}deg)`, transition: 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)' }} data-testid="roulette-wheel">
               <svg viewBox="0 0 320 320" className="w-full h-full">
                 {wheelNumbers.map((num, i) => {
                   const startA = i * segAngle - 90;
