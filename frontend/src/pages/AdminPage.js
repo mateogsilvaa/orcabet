@@ -35,7 +35,7 @@ export default function AdminPage() {
 
   // Athlete form
   const [showAthleteDialog, setShowAthleteDialog] = useState(false);
-  const [athleteForm, setAthleteForm] = useState({ name: '', position: '', team: '', rarity: 'common', overall_rating: 70, image_url: '', stats: { attack: 50, defense: 50, speed: 50 } });
+  const [athleteForm, setAthleteForm] = useState({ name: '', position: '', team: '', rarity: 'common', overall_rating: 70, image_url: '', stats: { vel: 50, pot: 50, tec: 50 } });
 
   // Resolve dialog
   const [resolveEvent, setResolveEvent] = useState(null);
@@ -128,7 +128,7 @@ export default function AdminPage() {
       await createAthleteSvc(athleteForm);
       toast.success('Atleta creado!');
       setShowAthleteDialog(false);
-      setAthleteForm({ name: '', position: '', team: '', rarity: 'common', overall_rating: 70, image_url: '', stats: { attack: 50, defense: 50, speed: 50 } });
+      setAthleteForm({ name: '', position: '', team: '', rarity: 'common', overall_rating: 70, image_url: '', stats: { vel: 50, pot: 50, tec: 50 } });
       loadData();
     } catch (err) { toast.error(err?.message || 'Error'); }
   };
@@ -387,16 +387,16 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-[10px] font-mono text-gray-500 block mb-1">ATK: {athleteForm.stats.attack}</label>
-                <input type="range" min="1" max="99" value={athleteForm.stats.attack} onChange={e => setAthleteForm({...athleteForm, stats: {...athleteForm.stats, attack: Number(e.target.value)}})} className="w-full accent-primary" />
+                <label className="text-[10px] font-mono text-gray-500 block mb-1">VEL: {athleteForm.stats.vel}</label>
+                <input type="range" min="1" max="99" value={athleteForm.stats.vel} onChange={e => setAthleteForm({...athleteForm, stats: {...athleteForm.stats, vel: Number(e.target.value)}})} className="w-full accent-primary" />
               </div>
               <div>
-                <label className="text-[10px] font-mono text-gray-500 block mb-1">DEF: {athleteForm.stats.defense}</label>
-                <input type="range" min="1" max="99" value={athleteForm.stats.defense} onChange={e => setAthleteForm({...athleteForm, stats: {...athleteForm.stats, defense: Number(e.target.value)}})} className="w-full accent-primary" />
+                <label className="text-[10px] font-mono text-gray-500 block mb-1">POT: {athleteForm.stats.pot}</label>
+                <input type="range" min="1" max="99" value={athleteForm.stats.pot} onChange={e => setAthleteForm({...athleteForm, stats: {...athleteForm.stats, pot: Number(e.target.value)}})} className="w-full accent-primary" />
               </div>
               <div>
-                <label className="text-[10px] font-mono text-gray-500 block mb-1">VEL: {athleteForm.stats.speed}</label>
-                <input type="range" min="1" max="99" value={athleteForm.stats.speed} onChange={e => setAthleteForm({...athleteForm, stats: {...athleteForm.stats, speed: Number(e.target.value)}})} className="w-full accent-primary" />
+                <label className="text-[10px] font-mono text-gray-500 block mb-1">TEC: {athleteForm.stats.tec}</label>
+                <input type="range" min="1" max="99" value={athleteForm.stats.tec} onChange={e => setAthleteForm({...athleteForm, stats: {...athleteForm.stats, tec: Number(e.target.value)}})} className="w-full accent-primary" />
               </div>
             </div>
             <Button onClick={createAthlete} className="w-full bg-primary text-black font-bold" data-testid="submit-athlete-btn">Crear Atleta</Button>

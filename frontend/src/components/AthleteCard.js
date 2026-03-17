@@ -70,9 +70,9 @@ export function AthleteCard({ card, size = 'default', onClick, showStats = true 
         {/* Stats */}
         {showStats && card.stats && !isSmall && (
           <div className="mt-3 space-y-1.5">
-            <StatRow icon={Swords} label="ATK" value={card.stats.attack} />
-            <StatRow icon={Shield} label="DEF" value={card.stats.defense} />
-            <StatRow icon={Zap} label="VEL" value={card.stats.speed} />
+            <StatRow icon={Zap} label="VEL" value={card.stats.speed || card.stats.vel || 0} />
+            <StatRow icon={Swords} label="POT" value={card.stats.attack || card.stats.pot || 0} />
+            <StatRow icon={Shield} label="TEC" value={card.stats.defense || card.stats.tec || 0} />
           </div>
         )}
       </div>
