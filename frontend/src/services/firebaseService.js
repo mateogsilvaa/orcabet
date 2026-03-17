@@ -400,6 +400,28 @@ export function subscribeToMyCollection(uid, callback) {
   return unsubscribe;
 }
 
+export async function getMyCollection(uid) {
+  try {
+    const [cardsSnap, athletesSnap] = await Promise.all([
+      getDocs(query(userCardsCol(uid), where('is_listed', '==', false), limit(500))),
+      getDocs(query(athletesCol(), limit(1000))),
+    ]);
+
+    const cards = cardsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const total_athletes = athletesSnap.size;
+    const unique_ids = new Set(cards.map(c => c.athlete_id));
+    return {
+      cards,
+      total_unique: unique_ids.size,
+      total_athletes,
+      total_cards: cards.length,
+      duplicates: cards.length - unique_ids.size,
+    };
+  } catch {
+    return { cards: [], total_unique: 0, total_athletes: 0, total_cards: 0, duplicates: 0 };
+  }
+}
+
 export async function getUserCollectionProfile(userId) {
   const [uSnap, cardsSnap, athletesSnap] = await Promise.all([
     getDoc(userDoc(userId)),
