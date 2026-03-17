@@ -96,17 +96,16 @@ export default function RoulettePage() {
       const targetIndex = wheelNumbers.indexOf(winNum);
       
       // OFFSET MANUAL: Si la imagen del 0 no está perfectamente a las 12 en punto en el archivo original
-      // 1. Desfase exacto de la imagen (22 posiciones)
-      const IMAGE_OFFSET = 22 * segmentAngle; 
+      // El offset real de la imagen es 0
+      const IMAGE_OFFSET = 0; 
       
-      // 2. Ajuste para que caiga en el centro de la casilla y no en la línea
+      // Ajuste para que caiga en el centro de la casilla (¡ESTO FUNCIONA PERFECTO!)
       const CENTER_ADJUST = segmentAngle / 2;
       
-      console.log(`[OFFSET] Desfase calculado: ${IMAGE_OFFSET}° (22 segmentos × 9.73°)`);
-
+      console.log(`[OFFSET] Offset de imagen: ${IMAGE_OFFSET}° (imagen calibrada de fábrica)`);
       console.log(`[CENTRO] Ajuste centrado: ${CENTER_ADJUST}° para centrado milimétrico`);
        
-      // 3. Cálculo final del ángulo
+      // Cálculo final del ángulo
       // Restamos de 360 porque para llevar un número de la derecha a la izquierda, la imagen debe girar al revés
       // Restamos CENTER_ADJUST para centrar en la casilla
       const targetAngle = (360 - (targetIndex * segmentAngle) + IMAGE_OFFSET - CENTER_ADJUST) % 360;
