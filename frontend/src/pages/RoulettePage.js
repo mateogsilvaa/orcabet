@@ -73,8 +73,10 @@ export default function RoulettePage() {
       const winNum = res.result_number;
       const idx = WHEEL_ORDER.indexOf(winNum);
       const segAngle = 360 / 37;
+      // El ángulo del centro del segmento del número ganador
       const targetAngle = idx * segAngle + segAngle / 2;
-      const newRot = wheelRotation + 1800 + (360 - targetAngle);
+      // Rotación total: múltiplos de 360 para el efecto + (360 - targetAngle) para que el número quede en el puntero
+      const newRot = wheelRotation + (5 * 360) + (360 - targetAngle);
       setWheelRotation(newRot);
       setTimeout(() => {
         setResult(res);
@@ -181,23 +183,23 @@ export default function RoulettePage() {
         {/* Betting Table */}
         <div className="space-y-3">
           {/* Number Grid */}
-          <div className="glass-card rounded-xl p-3">
+          <div className="glass-card rounded-xl p-2 sm:p-3">
             {/* Zero */}
             <button
               onClick={() => selectBet('number', 0)}
               data-testid="bet-number-0"
-              className={`w-full h-10 rounded-lg bg-green-600 text-white font-heading font-bold text-sm mb-2 transition-all hover:brightness-125 ${betType === 'number' && betValue === 0 ? 'ring-2 ring-primary ring-offset-1 ring-offset-[#0A0A0F]' : ''}`}
+              className={`w-full h-8 sm:h-10 rounded-lg bg-green-600 text-white font-heading font-bold text-xs sm:text-sm mb-2 transition-all hover:brightness-125 ${betType === 'number' && betValue === 0 ? 'ring-2 ring-primary ring-offset-1 ring-offset-[#0A0A0F]' : ''}`}
             >
               0
             </button>
-            {/* 1-36 grid: 12 rows x 3 columns */}
-            <div className="grid grid-cols-3 gap-1">
+            {/* 1-36 grid: responsive layout */}
+            <div className="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-3 gap-0.5 sm:gap-1">
               {numbers1to36.map(n => (
                 <button
                   key={n}
                   onClick={() => selectBet('number', n)}
                   data-testid={`bet-number-${n}`}
-                  className={`h-9 rounded text-xs font-heading font-bold text-white transition-all hover:brightness-125 ${getNumBg(n)} ${betType === 'number' && betValue === n ? 'ring-2 ring-primary ring-offset-1 ring-offset-[#0A0A0F]' : ''}`}
+                  className={`h-7 sm:h-9 rounded text-[10px] sm:text-xs font-heading font-bold text-white transition-all hover:brightness-125 ${getNumBg(n)} ${betType === 'number' && betValue === n ? 'ring-1 sm:ring-2 ring-primary ring-offset-1 ring-offset-[#0A0A0F]' : ''}`}
                 >
                   {n}
                 </button>
@@ -206,40 +208,40 @@ export default function RoulettePage() {
           </div>
 
           {/* Outside Bets */}
-          <div className="glass-card rounded-xl p-3 space-y-2">
+          <div className="glass-card rounded-xl p-2 sm:p-3 space-y-2">
             <p className="text-[10px] font-mono text-gray-500 tracking-widest uppercase mb-1">Apuestas externas</p>
             {/* Dozens */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1 sm:gap-2">
               {[{ v: '1-12', l: '1a Docena' }, { v: '13-24', l: '2a Docena' }, { v: '25-36', l: '3a Docena' }].map(d => (
                 <button
                   key={d.v}
                   onClick={() => selectBet('dozen', d.v)}
                   data-testid={`bet-dozen-${d.v}`}
-                  className={`py-2 rounded-lg text-xs font-body font-medium transition-all border ${betType === 'dozen' && betValue === d.v ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}
+                  className={`py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'dozen' && betValue === d.v ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}
                 >
-                  {d.l} <span className="text-[9px] text-gray-600">(x2)</span>
+                  {d.l} <span className="text-[8px] sm:text-[9px] text-gray-600">(x2)</span>
                 </button>
               ))}
             </div>
             {/* Color, Parity, Half */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <button onClick={() => selectBet('color', 'rojo')} data-testid="bet-color-rojo" className={`py-2.5 rounded-lg text-xs font-body font-bold transition-all ${betType === 'color' && betValue === 'rojo' ? 'bg-red-600 text-white ring-2 ring-primary' : 'bg-red-600/30 text-red-400 hover:bg-red-600/50'}`}>
-                Rojo <span className="text-[9px] opacity-60">(x1)</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-2">
+              <button onClick={() => selectBet('color', 'rojo')} data-testid="bet-color-rojo" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-bold transition-all ${betType === 'color' && betValue === 'rojo' ? 'bg-red-600 text-white ring-2 ring-primary' : 'bg-red-600/30 text-red-400 hover:bg-red-600/50'}`}>
+                Rojo <span className="text-[8px] sm:text-[9px] opacity-60">(x1)</span>
               </button>
-              <button onClick={() => selectBet('color', 'negro')} data-testid="bet-color-negro" className={`py-2.5 rounded-lg text-xs font-body font-bold transition-all ${betType === 'color' && betValue === 'negro' ? 'bg-[#1a1a2e] text-white ring-2 ring-primary' : 'bg-[#1a1a2e]/60 text-gray-300 hover:bg-[#1a1a2e]'}`}>
-                Negro <span className="text-[9px] opacity-60">(x1)</span>
+              <button onClick={() => selectBet('color', 'negro')} data-testid="bet-color-negro" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-bold transition-all ${betType === 'color' && betValue === 'negro' ? 'bg-[#1a1a2e] text-white ring-2 ring-primary' : 'bg-[#1a1a2e]/60 text-gray-300 hover:bg-[#1a1a2e]'}`}>
+                Negro <span className="text-[8px] sm:text-[9px] opacity-60">(x1)</span>
               </button>
-              <button onClick={() => selectBet('parity', 'par')} data-testid="bet-parity-par" className={`py-2.5 rounded-lg text-xs font-body font-medium transition-all border ${betType === 'parity' && betValue === 'par' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
-                Par <span className="text-[9px] text-gray-600">(x1)</span>
+              <button onClick={() => selectBet('parity', 'par')} data-testid="bet-parity-par" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'parity' && betValue === 'par' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
+                Par <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
               </button>
-              <button onClick={() => selectBet('parity', 'impar')} data-testid="bet-parity-impar" className={`py-2.5 rounded-lg text-xs font-body font-medium transition-all border ${betType === 'parity' && betValue === 'impar' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
-                Impar <span className="text-[9px] text-gray-600">(x1)</span>
+              <button onClick={() => selectBet('parity', 'impar')} data-testid="bet-parity-impar" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'parity' && betValue === 'impar' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
+                Impar <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
               </button>
-              <button onClick={() => selectBet('half', '1-18')} data-testid="bet-half-1-18" className={`py-2.5 rounded-lg text-xs font-body font-medium transition-all border ${betType === 'half' && betValue === '1-18' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
-                1-18 <span className="text-[9px] text-gray-600">(x1)</span>
+              <button onClick={() => selectBet('half', '1-18')} data-testid="bet-half-1-18" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'half' && betValue === '1-18' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
+                1-18 <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
               </button>
-              <button onClick={() => selectBet('half', '19-36')} data-testid="bet-half-19-36" className={`py-2.5 rounded-lg text-xs font-body font-medium transition-all border ${betType === 'half' && betValue === '19-36' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
-                19-36 <span className="text-[9px] text-gray-600">(x1)</span>
+              <button onClick={() => selectBet('half', '19-36')} data-testid="bet-half-19-36" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'half' && betValue === '19-36' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
+                19-36 <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
               </button>
             </div>
           </div>

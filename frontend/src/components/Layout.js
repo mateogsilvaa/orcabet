@@ -102,21 +102,21 @@ export default function Layout({ children }) {
 
         {/* Mobile Bottom Nav */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-md border-t border-[#222] z-30" data-testid="mobile-nav">
-          <div className="flex justify-around py-1.5">
-            {navItems.slice(0, 5).map(item => (
+          <div className="flex overflow-x-auto scrollbar-hide py-1.5 px-2 gap-1">
+            {navItems.map(item => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === '/'}
                 data-testid={`mobile-nav-${item.label.toLowerCase()}`}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] transition-colors ${
+                  `flex flex-col items-center gap-0.5 px-1.5 py-1 text-[9px] transition-colors flex-shrink-0 min-w-[50px] ${
                     isActive ? 'text-[#ff5e00]' : 'text-gray-600'
                   }`
                 }
               >
-                <item.icon size={18} strokeWidth={1.5} />
-                <span>{item.label}</span>
+                <item.icon size={16} strokeWidth={1.5} />
+                <span className="truncate">{item.label}</span>
               </NavLink>
             ))}
           </div>
