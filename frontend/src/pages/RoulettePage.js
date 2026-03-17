@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/firebase';
-import { getRouletteStatus, playRoulette } from '@/services/firebaseService';
+import { getRouletteStatus, placeRouletteBet, playRoulette } from '@/services/firebaseService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -65,33 +65,54 @@ export default function RoulettePage() {
       toast.error('Selecciona apuesta y cantidad');
       return;
     }
+    
     setSpinning(true);
     setResult(null);
+    
     try {
       const firebaseUser = auth.currentUser;
       if (!firebaseUser) throw new Error('Usuario no autenticado');
-      const res = await playRoulette({ uid: firebaseUser.uid, bet_type: betType, bet_value: String(betValue), amount: Number(betAmount) });
+      
+      // 1. Restar inmediatamente el monto apostado
+      await placeRouletteBet({ uid: firebaseUser.uid, amount: Number(betAmount) });
+      refreshBalance(); // Actualizar balance inmediatamente
+      
+      // 2. Obtener resultado del servidor
+      const res = await playRoulette({ 
+        uid: firebaseUser.uid, 
+        bet_type: betType, 
+        bet_value: String(betValue), 
+        amount: Number(betAmount) 
+      });
+      
       const winNum = res.result_number;
       const segAngle = 360 / 37; // ≈ 9.7297° por segmento
       const numberIndex = wheelNumbers.indexOf(winNum);
       
-      // Cálculo exacto: 360 - (índice * ángulo_por_segmento) + offset
+      // 3. Cálculo épico de rotación: (Vueltas_Base * 360) + Ángulo_Del_Numero
+      const baseRotations = 5; // Mínimo 5 vueltas para efecto épico
       const targetAngle = 360 - (numberIndex * segAngle) + ROTATION_OFFSET;
+      const newRot = (baseRotations * 360) + targetAngle;
       
-      // Reset de rotación: añadir vueltas completas para evitar acumulación de error
-      const baseRotation = 3600; // 10 vueltas completas
-      const newRot = baseRotation + targetAngle;
-      
+      // 4. Aplicar rotación con transición suave
       setWheelRotation(newRot);
+      
+      // 5. Después de la animación (4-5 segundos)
       setTimeout(() => {
         setResult(res);
         setSpinsRemaining(res.spins_remaining);
         setHistory(prev => [winNum, ...prev].slice(0, 10));
-        refreshBalance();
-        if (res.won) toast.success(`Ganaste ${res.winnings} monedas!`);
-        else toast.error(`Perdiste ${res.bet_amount} monedas`);
+        refreshBalance(); // Actualizar por si ganó
+        
+        if (res.won) {
+          toast.success(`Ganaste ${res.winnings} monedas!`);
+        } else {
+          toast.error(`Perdiste ${betAmount} monedas`);
+        }
+        
         setSpinning(false);
-      }, 4000);
+      }, 4500); // 4.5 segundos para animación épica
+      
     } catch (err) {
       toast.error(err?.message || 'Error al jugar');
       setSpinning(false);
@@ -193,7 +214,8 @@ export default function RoulettePage() {
             <button
               onClick={() => selectBet('number', 0)}
               data-testid="bet-number-0"
-              className={`w-full h-8 sm:h-10 rounded-lg bg-green-600 text-white font-heading font-bold text-xs sm:text-sm mb-2 transition-all hover:brightness-125 ${betType === 'number' && betValue === 0 ? 'ring-2 ring-primary ring-offset-1 ring-offset-[#0A0A0F]' : ''}`}
+              disabled={spinning}
+              className={`w-full h-8 sm:h-10 rounded-lg bg-green-600 text-white font-heading font-bold text-xs sm:text-sm mb-2 transition-all hover:brightness-125 disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'number' && betValue === 0 ? 'ring-2 ring-primary ring-offset-1 ring-offset-[#0A0A0F]' : ''}`}
             >
               0
             </button>
@@ -204,7 +226,8 @@ export default function RoulettePage() {
                   key={n}
                   onClick={() => selectBet('number', n)}
                   data-testid={`bet-number-${n}`}
-                  className={`h-7 sm:h-9 rounded text-[10px] sm:text-xs font-heading font-bold text-white transition-all hover:brightness-125 ${getNumBg(n)} ${betType === 'number' && betValue === n ? 'ring-1 sm:ring-2 ring-primary ring-offset-1 ring-offset-[#0A0A0F]' : ''}`}
+                  disabled={spinning}
+                  className={`h-7 sm:h-9 rounded text-[10px] sm:text-xs font-heading font-bold text-white transition-all hover:brightness-125 disabled:opacity-50 disabled:cursor-not-allowed ${getNumBg(n)} ${betType === 'number' && betValue === n ? 'ring-1 sm:ring-2 ring-primary ring-offset-1 ring-offset-[#0A0A0F]' : ''}`}
                 >
                   {n}
                 </button>
@@ -222,7 +245,8 @@ export default function RoulettePage() {
                   key={d.v}
                   onClick={() => selectBet('dozen', d.v)}
                   data-testid={`bet-dozen-${d.v}`}
-                  className={`py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'dozen' && betValue === d.v ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}
+                  disabled={spinning}
+                  className={`py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'dozen' && betValue === d.v ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}
                 >
                   {d.l} <span className="text-[8px] sm:text-[9px] text-gray-600">(x2)</span>
                 </button>
@@ -230,22 +254,22 @@ export default function RoulettePage() {
             </div>
             {/* Color, Parity, Half */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-2">
-              <button onClick={() => selectBet('color', 'rojo')} data-testid="bet-color-rojo" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-bold transition-all ${betType === 'color' && betValue === 'rojo' ? 'bg-red-600 text-white ring-2 ring-primary' : 'bg-red-600/30 text-red-400 hover:bg-red-600/50'}`}>
+              <button onClick={() => selectBet('color', 'rojo')} data-testid="bet-color-rojo" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'color' && betValue === 'rojo' ? 'bg-red-600 text-white ring-2 ring-primary' : 'bg-red-600/30 text-red-400 hover:bg-red-600/50'}`}>
                 Rojo <span className="text-[8px] sm:text-[9px] opacity-60">(x1)</span>
               </button>
-              <button onClick={() => selectBet('color', 'negro')} data-testid="bet-color-negro" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-bold transition-all ${betType === 'color' && betValue === 'negro' ? 'bg-[#1a1a2e] text-white ring-2 ring-primary' : 'bg-[#1a1a2e]/60 text-gray-300 hover:bg-[#1a1a2e]'}`}>
+              <button onClick={() => selectBet('color', 'negro')} data-testid="bet-color-negro" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'color' && betValue === 'negro' ? 'bg-[#1a1a2e] text-white ring-2 ring-primary' : 'bg-[#1a1a2e]/60 text-gray-300 hover:bg-[#1a1a2e]'}`}>
                 Negro <span className="text-[8px] sm:text-[9px] opacity-60">(x1)</span>
               </button>
-              <button onClick={() => selectBet('parity', 'par')} data-testid="bet-parity-par" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'parity' && betValue === 'par' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
+              <button onClick={() => selectBet('parity', 'par')} data-testid="bet-parity-par" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'parity' && betValue === 'par' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
                 Par <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
               </button>
-              <button onClick={() => selectBet('parity', 'impar')} data-testid="bet-parity-impar" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'parity' && betValue === 'impar' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
+              <button onClick={() => selectBet('parity', 'impar')} data-testid="bet-parity-impar" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'parity' && betValue === 'impar' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
                 Impar <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
               </button>
-              <button onClick={() => selectBet('half', '1-18')} data-testid="bet-half-1-18" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'half' && betValue === '1-18' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
+              <button onClick={() => selectBet('half', '1-18')} data-testid="bet-half-1-18" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'half' && betValue === '1-18' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
                 1-18 <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
               </button>
-              <button onClick={() => selectBet('half', '19-36')} data-testid="bet-half-19-36" className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border ${betType === 'half' && betValue === '19-36' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
+              <button onClick={() => selectBet('half', '19-36')} data-testid="bet-half-19-36" disabled={spinning} className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-body font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${betType === 'half' && betValue === '19-36' ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
                 19-36 <span className="text-[8px] sm:text-[9px] text-gray-600">(x1)</span>
               </button>
             </div>
@@ -265,8 +289,9 @@ export default function RoulettePage() {
                 value={betAmount}
                 onChange={e => setBetAmount(e.target.value)}
                 placeholder="Cantidad a apostar"
+                disabled={spinning}
                 data-testid="roulette-bet-amount"
-                className="bg-black/50 border-white/10 text-white flex-1"
+                className="bg-black/50 border-white/10 text-white flex-1 disabled:opacity-50"
               />
               <Button
                 onClick={play}

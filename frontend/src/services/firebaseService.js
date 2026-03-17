@@ -531,6 +531,24 @@ export async function getRouletteStatus(uid) {
   return { spins_remaining: Math.max(0, 3 - spins_used), spins_used };
 }
 
+export async function placeRouletteBet({ uid, amount }) {
+  const amt = Number(amount);
+  if (!amt || amt <= 0) throw new Error('Cantidad invalida');
+
+  return await runTransaction(db, async (tx) => {
+    const uRef = userDoc(uid);
+    const uSnap = await tx.get(uRef);
+    if (!uSnap.exists()) throw new Error('Usuario no encontrado');
+    const u = uSnap.data();
+    if (Number(u.balance || 0) < amt) throw new Error('Saldo insuficiente');
+
+    // Restar inmediatamente el monto apostado
+    tx.update(uRef, { balance: increment(-amt) });
+    
+    return { success: true, deductedAmount: amt };
+  });
+}
+
 export async function playRoulette({ uid, bet_type, bet_value, amount }) {
   const amt = Number(amount);
   if (!amt || amt <= 0) throw new Error('Cantidad invalida');
@@ -541,12 +559,6 @@ export async function playRoulette({ uid, bet_type, bet_value, amount }) {
     const logSnap = await tx.get(logRef);
     const spins_used = logSnap.exists() ? Number(logSnap.data().spins_used || 0) : 0;
     if (spins_used >= 3) throw new Error('Sin tiradas disponibles hoy');
-
-    const uRef = userDoc(uid);
-    const uSnap = await tx.get(uRef);
-    if (!uSnap.exists()) throw new Error('Usuario no encontrado');
-    const u = uSnap.data();
-    if (Number(u.balance || 0) < amt) throw new Error('Saldo insuficiente');
 
     const result_number = Math.floor(Math.random() * 37);
     const result_color = result_number === 0 ? 'verde' : (RED_NUMBERS_SET.has(result_number) ? 'rojo' : 'negro');
@@ -566,9 +578,12 @@ export async function playRoulette({ uid, bet_type, bet_value, amount }) {
     }
 
     const winnings = amt * multiplier;
-    const totalPayout = amt + winnings; // Apuesta + ganancia
-    const net = totalPayout - amt; // Neto para balance actual
-    tx.update(uRef, { balance: increment(net) });
+    
+    // Solo sumar si gana (no restar la apuesta, ya se restó antes)
+    if (multiplier > 0) {
+      const uRef = userDoc(uid);
+      tx.update(uRef, { balance: increment(winnings) });
+    }
 
     if (logSnap.exists()) tx.update(logRef, { spins_used: increment(1) });
     else tx.set(logRef, { spins_used: 1, date: key, created_at: serverTimestamp() });
@@ -579,7 +594,7 @@ export async function playRoulette({ uid, bet_type, bet_value, amount }) {
       result_color,
       won: multiplier > 0,
       multiplier,
-      winnings: totalPayout, // Total recibido (apuesta + premio)
+      winnings, // Solo el premio, no incluye la apuesta
       bet_amount: amt,
       spins_remaining,
     };
