@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/services/api';
+import { auth } from '@/firebase';
+import {
+  listMarketListings,
+  getMyCollection,
+  listCardOnMarket,
+  buyListing as buyListingService,
+  placeBid as placeBidService,
+  cancelListing as cancelListingService,
+} from '@/services/firebaseService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,12 +42,14 @@ export default function MarketPage() {
 
   const loadData = async () => {
     try {
-      const [listRes, collRes] = await Promise.all([
-        api.get('/market'),
-        api.get('/collection'),
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      const [listData, collData] = await Promise.all([
+        listMarketListings(),
+        getMyCollection(firebaseUser.uid),
       ]);
-      setListings(listRes.data);
-      setMyCards(collRes.data.cards);
+      setListings(listData);
+      setMyCards(collData.cards);
     } catch { /* ignore */ }
     setLoading(false);
   };
@@ -47,41 +57,49 @@ export default function MarketPage() {
   const listCard = async () => {
     if (!sellCard || !sellPrice) return;
     try {
-      await api.post('/market/list', { user_card_id: sellCard.id, price: Number(sellPrice), listing_type: sellType });
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      await listCardOnMarket({ uid: firebaseUser.uid, username: user?.username, user_card_id: sellCard.id, price: Number(sellPrice), listing_type: sellType });
       toast.success('Carta listada en el mercado!');
       setShowSellDialog(false);
       setSellCard(null);
       setSellPrice('');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error al listar'); }
+    } catch (err) { toast.error(err?.message || 'Error al listar'); }
   };
 
   const buyListing = async (listingId) => {
     try {
-      await api.post(`/market/${listingId}/buy`);
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      await buyListingService({ buyer_uid: firebaseUser.uid, listing_id: listingId });
       toast.success('Carta comprada!');
       await refreshBalance();
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error al comprar'); }
+    } catch (err) { toast.error(err?.message || 'Error al comprar'); }
   };
 
   const placeBid = async () => {
     if (!bidDialog || !bidAmount) return;
     try {
-      await api.post(`/market/${bidDialog.id}/bid`, { amount: Number(bidAmount) });
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      await placeBidService({ bidder_uid: firebaseUser.uid, bidder_name: user?.username, listing_id: bidDialog.id, amount: Number(bidAmount) });
       toast.success('Puja realizada!');
       setBidDialog(null);
       setBidAmount('');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error al pujar'); }
+    } catch (err) { toast.error(err?.message || 'Error al pujar'); }
   };
 
   const cancelListing = async (listingId) => {
     try {
-      await api.post(`/market/${listingId}/cancel`);
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      await cancelListingService({ uid: firebaseUser.uid, listing_id: listingId });
       toast.success('Listado cancelado');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   return (

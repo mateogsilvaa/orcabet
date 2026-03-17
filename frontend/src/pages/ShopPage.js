@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/services/api';
+import { auth } from '@/firebase';
+import { checkFreePackAvailable, buyPack as buyPackService, pickCard as pickCardService } from '@/services/firebaseService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,17 +32,21 @@ export default function ShopPage() {
 
   const checkFree = async () => {
     try {
-      const res = await api.get('/packs/free-available');
-      setFreeAvailable(res.data.available);
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) return;
+      const available = await checkFreePackAvailable(firebaseUser.uid);
+      setFreeAvailable(available);
     } catch { /* ignore */ }
   };
 
   const buyPack = async (packType) => {
     setBuying(packType);
     try {
-      const res = await api.post('/packs/buy', { pack_type: packType });
-      setOpenedCards(res.data.cards);
-      setPackId(res.data.pack_id);
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      const res = await buyPackService({ uid: firebaseUser.uid, pack_type: packType });
+      setOpenedCards(res.cards);
+      setPackId(res.pack_id);
       setRevealedIdx(-1);
       setAllRevealed(false);
       setPickingCard(false);
@@ -49,7 +54,7 @@ export default function ShopPage() {
       await refreshBalance();
       if (packType === 'free') setFreeAvailable(false);
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error comprando sobre');
+      toast.error(err?.message || 'Error comprando sobre');
     }
     setBuying(null);
   };
@@ -69,11 +74,13 @@ export default function ShopPage() {
     if (!packId || pickingCard) return;
     setPickingCard(true);
     try {
-      await api.post('/packs/pick', { pack_id: packId, card_index: index });
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      await pickCardService({ uid: firebaseUser.uid, pack_id: packId, card_index: index });
       toast.success(`Elegiste a ${openedCards[index].athlete_name}!`);
       setShowOpening(false);
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error al elegir carta');
+      toast.error(err?.message || 'Error al elegir carta');
     }
     setPickingCard(false);
   };

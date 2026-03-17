@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/services/api';
+import { auth } from '@/firebase';
+import { getMyCollection } from '@/services/firebaseService';
 import { AthleteCard } from '@/components/AthleteCard';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -18,8 +19,10 @@ export default function CollectionPage() {
 
   const loadCollection = async () => {
     try {
-      const res = await api.get('/collection');
-      setCollection(res.data);
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) return;
+      const data = await getMyCollection(firebaseUser.uid);
+      setCollection(data);
     } catch { /* ignore */ }
     setLoading(false);
   };

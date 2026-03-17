@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '@/services/api';
+import { listLeaderboard, getUserCollectionProfile, searchUsersByUsername } from '@/services/firebaseService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,8 @@ export default function ShowPage() {
 
   const loadLeaderboard = async () => {
     try {
-      const res = await api.get('/users/leaderboard');
-      setLeaderboard(res.data);
+      const data = await listLeaderboard();
+      setLeaderboard(data);
     } catch { /* ignore */ }
     setLoading(false);
   };
@@ -38,8 +38,8 @@ export default function ShowPage() {
   const loadProfile = async (id) => {
     setLoading(true);
     try {
-      const res = await api.get(`/users/${id}/profile`);
-      setProfile(res.data);
+      const data = await getUserCollectionProfile(id);
+      setProfile(data);
     } catch { /* ignore */ }
     setLoading(false);
   };
@@ -47,8 +47,8 @@ export default function ShowPage() {
   const searchUsers = async () => {
     if (!searchQuery.trim()) return;
     try {
-      const res = await api.get(`/users/search?q=${searchQuery}`);
-      setSearchResults(res.data);
+      const data = await searchUsersByUsername(searchQuery);
+      setSearchResults(data);
     } catch { /* ignore */ }
   };
 

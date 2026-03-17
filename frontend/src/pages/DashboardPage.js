@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/services/api';
+import { auth } from '@/firebase';
+import { listMyBets, getMyCollection } from '@/services/firebaseService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,19 +18,21 @@ export default function DashboardPage() {
   useEffect(() => {
     refreshBalance();
     loadData();
-  }, []);
+  }, [refreshBalance]);
 
   const loadData = async () => {
     try {
-      const [betsRes, collectionRes] = await Promise.all([
-        api.get('/bets/mine'),
-        api.get('/collection'),
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) return;
+      const [betsData, collectionData] = await Promise.all([
+        listMyBets(firebaseUser.uid),
+        getMyCollection(firebaseUser.uid),
       ]);
-      setRecentBets(betsRes.data.slice(0, 5));
+      setRecentBets(betsData.slice(0, 5));
       setStats({
-        total_cards: collectionRes.data.total_cards,
-        unique_cards: collectionRes.data.total_unique,
-        total_athletes: collectionRes.data.total_athletes,
+        total_cards: collectionData.total_cards,
+        unique_cards: collectionData.total_unique,
+        total_athletes: collectionData.total_athletes,
       });
     } catch { /* ignore errors on dashboard */ }
     setLoading(false);

@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/services/api';
+import {
+  getAdminStats,
+  listEvents,
+  listAthletes,
+  createEvent as createEventSvc,
+  resolveEvent as resolveEventSvc,
+  closeEvent as closeEventSvc,
+  deleteEvent as deleteEventSvc,
+  createAthlete as createAthleteSvc,
+  deleteAthlete as deleteAthleteSvc,
+  adminAddBalance,
+} from '@/services/firebaseService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,26 +51,33 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
-      const [statsRes, eventsRes, athletesRes, usersRes] = await Promise.all([
-        api.get('/admin/stats'),
-        api.get('/events/all'),
-        api.get('/athletes'),
-        api.get('/admin/users'),
+      const [statsData, eventsData, athletesData, usersData] = await Promise.all([
+        getAdminStats(),
+        listEvents({ includeAll: true }),
+        listAthletes(),
+        // Nota: "admin/users" era un endpoint; aquí leemos users directamente.
+        // La seguridad debe venir de Rules.
+        (async () => {
+          const { getDocs, query, where, limit, collection } = await import('firebase/firestore');
+          const { db } = await import('@/firebase');
+          const snap = await getDocs(query(collection(db, 'users'), where('is_admin', '!=', true), limit(200)));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        })(),
       ]);
-      setStats(statsRes.data);
-      setEvents(eventsRes.data);
-      setAthletes(athletesRes.data);
-      setAllUsers(usersRes.data);
+      setStats(statsData);
+      setEvents(eventsData);
+      setAthletes(athletesData);
+      setAllUsers(usersData);
     } catch { /* ignore */ }
     setLoading(false);
   };
 
   const seedAthletes = async () => {
     try {
-      const res = await api.post('/admin/seed-athletes');
-      toast.success(res.data.message);
+      // Semilla de ejemplo: puedes cargar atletas creando manualmente en Firestore.
+      toast.error('La semilla automática fue eliminada (serverless). Crea atletas desde el panel.');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   const createEvent = async () => {
@@ -69,69 +87,69 @@ export default function AdminPage() {
       return;
     }
     try {
-      await api.post('/events', { ...eventForm, options: opts });
+      await createEventSvc({ ...eventForm, options: opts });
       toast.success('Evento creado!');
       setShowEventDialog(false);
       setEventForm({ title: '', description: '', sport: '', options: [{ name: '', odds: '' }] });
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   const handleResolve = async () => {
     if (!resolveEvent || !winningOption) return;
     try {
-      await api.put(`/events/${resolveEvent.id}/resolve`, { winning_option: winningOption });
+      await resolveEventSvc(resolveEvent.id, winningOption);
       toast.success('Evento resuelto!');
       setResolveEvent(null);
       setWinningOption('');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   const closeEvent = async (eventId) => {
     try {
-      await api.put(`/events/${eventId}/close`);
+      await closeEventSvc(eventId);
       toast.success('Evento cerrado');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   const deleteEvent = async (eventId) => {
     try {
-      await api.delete(`/events/${eventId}`);
+      await deleteEventSvc(eventId);
       toast.success('Evento eliminado');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   const createAthlete = async () => {
     if (!athleteForm.name) { toast.error('Nombre requerido'); return; }
     try {
-      await api.post('/athletes', athleteForm);
+      await createAthleteSvc(athleteForm);
       toast.success('Atleta creado!');
       setShowAthleteDialog(false);
       setAthleteForm({ name: '', position: '', team: '', rarity: 'common', overall_rating: 70, image_url: '', stats: { attack: 50, defense: 50, speed: 50 } });
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   const deleteAthlete = async (id) => {
     try {
-      await api.delete(`/athletes/${id}`);
+      await deleteAthleteSvc(id);
       toast.success('Atleta eliminado');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   const addBalance = async () => {
     if (!balanceUser || !balanceAmount) return;
     try {
-      const res = await api.post(`/admin/add-balance/${balanceUser.id}`, { amount: Number(balanceAmount) });
-      toast.success(`Saldo actualizado: ${res.data.new_balance} monedas`);
+      const res = await adminAddBalance({ user_id: balanceUser.id, amount: Number(balanceAmount) });
+      toast.success(`Saldo actualizado: ${res.new_balance} monedas`);
       setBalanceUser(null);
       setBalanceAmount('');
       loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || 'Error'); }
+    } catch (err) { toast.error(err?.message || 'Error'); }
   };
 
   if (!user?.is_admin) {

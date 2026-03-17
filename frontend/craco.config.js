@@ -1,5 +1,4 @@
 const path = require("path");
-require("dotenv").config();
 
 const isDevServer = process.env.NODE_ENV !== "production";
 const config = {
@@ -64,19 +63,6 @@ let cracoConfig = {
   }
 };
 
-if (isDevServer) {
-  try {
-    const { withVisualEdits } = require("@emergentbase/visual-edits/craco");
-    cracoConfig = withVisualEdits(cracoConfig);
-  } catch (err) {
-    if (err.code === 'MODULE_NOT_FOUND' && err.message.includes('@emergentbase/visual-edits/craco')) {
-      console.warn(
-        "[visual-edits] @emergentbase/visual-edits not installed — visual editing disabled."
-      );
-    } else {
-      throw err;
-    }
-  }
-}
+// visual-edits eliminado
 
 module.exports = cracoConfig;

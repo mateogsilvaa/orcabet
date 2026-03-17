@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/services/api';
+import { auth } from '@/firebase';
+import { getRouletteStatus, playRoulette } from '@/services/firebaseService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { RotateCw, Coins, Zap } from 'lucide-react';
+import { RotateCw, Zap } from 'lucide-react';
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
@@ -28,7 +29,12 @@ export default function RoulettePage() {
   useEffect(() => { loadStatus(); }, []);
 
   const loadStatus = async () => {
-    try { const res = await api.get('/roulette/status'); setSpinsRemaining(res.data.spins_remaining); } catch {}
+    try {
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) return;
+      const st = await getRouletteStatus(firebaseUser.uid);
+      setSpinsRemaining(st.spins_remaining);
+    } catch { /* ignore */ }
     setLoading(false);
   };
 
@@ -61,24 +67,26 @@ export default function RoulettePage() {
     setSpinning(true);
     setResult(null);
     try {
-      const res = await api.post('/roulette/play', { bet_type: betType, bet_value: String(betValue), amount: Number(betAmount) });
-      const winNum = res.data.result_number;
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      const res = await playRoulette({ uid: firebaseUser.uid, bet_type: betType, bet_value: String(betValue), amount: Number(betAmount) });
+      const winNum = res.result_number;
       const idx = WHEEL_ORDER.indexOf(winNum);
       const segAngle = 360 / 37;
       const targetAngle = idx * segAngle + segAngle / 2;
       const newRot = wheelRotation + 1800 + (360 - targetAngle);
       setWheelRotation(newRot);
       setTimeout(() => {
-        setResult(res.data);
-        setSpinsRemaining(res.data.spins_remaining);
+        setResult(res);
+        setSpinsRemaining(res.spins_remaining);
         setHistory(prev => [winNum, ...prev].slice(0, 10));
         refreshBalance();
-        if (res.data.won) toast.success(`Ganaste ${res.data.winnings} monedas!`);
-        else toast.error(`Perdiste ${res.data.bet_amount} monedas`);
+        if (res.won) toast.success(`Ganaste ${res.winnings} monedas!`);
+        else toast.error(`Perdiste ${res.bet_amount} monedas`);
         setSpinning(false);
       }, 4000);
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error al jugar');
+      toast.error(err?.message || 'Error al jugar');
       setSpinning(false);
     }
   };

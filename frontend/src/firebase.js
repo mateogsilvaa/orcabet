@@ -1,5 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAm5TX5FY7bUbSQkVe98nFzGw6mU4LL5fI",
@@ -13,4 +15,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
+
+export async function initAnalytics() {
+  if (process.env.NODE_ENV !== "production") return null;
+  if (typeof window === "undefined") return null;
+  const supported = await isSupported();
+  if (!supported) return null;
+  return getAnalytics(app);
+}
+
 export default app;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/services/api';
+import { auth } from '@/firebase';
+import { listEvents, listMyBets, placeBet } from '@/services/firebaseService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,12 +24,13 @@ export default function BettingPage() {
 
   const loadData = async () => {
     try {
-      const [eventsRes, betsRes] = await Promise.all([
-        api.get('/events'),
-        api.get('/bets/mine'),
+      const firebaseUser = auth.currentUser;
+      const [eventsData, betsData] = await Promise.all([
+        listEvents(),
+        firebaseUser ? listMyBets(firebaseUser.uid) : Promise.resolve([]),
       ]);
-      setEvents(eventsRes.data);
-      setMyBets(betsRes.data);
+      setEvents(eventsData);
+      setMyBets(betsData);
     } catch { toast.error('Error cargando datos'); }
     setLoading(false);
   };
@@ -46,7 +48,11 @@ export default function BettingPage() {
     }
     setPlacing(true);
     try {
-      await api.post('/bets', {
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Usuario no autenticado');
+      await placeBet({
+        uid: firebaseUser.uid,
+        username: user?.username,
         event_id: betSlip.event.id,
         option_name: betSlip.option.name,
         amount: Number(betAmount),
@@ -57,7 +63,7 @@ export default function BettingPage() {
       await refreshBalance();
       loadData();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error al apostar');
+      toast.error(err?.message || 'Error al apostar');
     }
     setPlacing(false);
   };
