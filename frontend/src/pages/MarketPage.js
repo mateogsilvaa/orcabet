@@ -43,18 +43,37 @@ export default function MarketPage() {
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) return;
     
-    // Suscribirse a datos en tiempo real
+    setLoading(true);
+    
+    // Suscribirse a datos del mercado en tiempo real
     const unsubscribeMarket = subscribeToMarketListings((listingsData) => {
-      setListings(listingsData);
+      try {
+        console.log("Datos del mercado recibidos:", listingsData?.length || 0);
+        setListings(listingsData || []);
+      } catch (error) {
+        console.error("Error procesando datos del mercado:", error);
+        setListings([]);
+      } finally {
+        setLoading(false);
+      }
     });
     
+    // Suscribirse a colección del usuario en tiempo real
     const unsubscribeCollection = subscribeToMyCollection(firebaseUser.uid, (collectionData) => {
-      setMyCards(collectionData.cards);
+      try {
+        console.log("Datos de colección recibidos:", collectionData?.cards?.length || 0);
+        setMyCards(collectionData?.cards || []);
+      } catch (error) {
+        console.error("Error procesando datos de colección:", error);
+        setMyCards([]);
+      } finally {
+        setLoading(false);
+      }
     });
     
     return () => {
-      unsubscribeMarket(); // Cleanup
-      unsubscribeCollection(); // Cleanup
+      unsubscribeMarket();
+      unsubscribeCollection();
     };
   }, []);
 

@@ -24,15 +24,28 @@ export default function BettingPage() {
 
   const loadData = async () => {
     try {
+      setLoading(true);
       const firebaseUser = auth.currentUser;
+      console.log("Cargando datos para usuario:", firebaseUser?.uid);
+      
       const [eventsData, betsData] = await Promise.all([
         listEvents(),
         firebaseUser ? listMyBets(firebaseUser.uid) : Promise.resolve([]),
       ]);
-      setEvents(eventsData);
-      setMyBets(betsData);
-    } catch { toast.error('Error cargando datos'); }
-    setLoading(false);
+      
+      console.log("Eventos recibidos:", eventsData?.length || 0);
+      console.log("Apuestas recibidas:", betsData?.length || 0);
+      
+      setEvents(eventsData || []);
+      setMyBets(betsData || []);
+    } catch (error) {
+      console.error("Error cargando datos:", error);
+      toast.error('Error cargando datos');
+      setEvents([]);
+      setMyBets([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const selectOption = (event, option) => {

@@ -118,9 +118,8 @@ export async function getUserBalance(uid) {
 // =========================
 export async function listEvents({ includeAll = false } = {}) {
   try {
-    const q = includeAll
-      ? query(eventsCol(), orderBy('created_at', 'desc'))
-      : query(eventsCol(), where('status', 'in', ['open', 'closed']), orderBy('created_at', 'desc'));
+    // Query simple sin filtros estrictos para asegurar que los eventos se muestren
+    const q = query(eventsCol(), orderBy('created_at', 'desc'), limit(100));
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch {
