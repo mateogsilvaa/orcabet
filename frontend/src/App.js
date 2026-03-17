@@ -1,5 +1,5 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Toaster } from "sonner";
 import Layout from "@/components/Layout";
@@ -51,7 +51,7 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter basename={process.env.PUBLIC_URL || "/"}>
+      <HashRouter>
         <Toaster
           theme="dark"
           position="top-right"
@@ -65,7 +65,7 @@ function App() {
           }}
         />
         <AppRoutes />
-      </BrowserRouter>
+      </HashRouter>
     </AuthProvider>
   );
 }
