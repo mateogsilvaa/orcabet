@@ -192,30 +192,36 @@ export async function listMyBets(uid) {
 }
 
 export async function placeBet({ uid, username, event_id, option_name, amount }) {
+  if (!uid || !event_id) throw new Error("Faltan datos de usuario o evento");
+  
   const amt = Number(amount);
   if (!amt || amt <= 0) throw new Error('Cantidad invalida');
 
-  return await runTransaction(db, async (tx) => {
-    const uRef = userDoc(uid);
-    const uSnap = await tx.get(uRef);
+  try {
+    // Verificar saldo del usuario
+    const uSnap = await getDoc(userDoc(uid));
     if (!uSnap.exists()) throw new Error('Usuario no encontrado');
-    const u = uSnap.data();
-    if (Number(u.balance || 0) < amt) throw new Error('Saldo insuficiente');
+    const user = uSnap.data();
+    if (Number(user.balance || 0) < amt) throw new Error('Saldo insuficiente');
 
-    const evRef = eventDoc(event_id);
-    const evSnap = await tx.get(evRef);
+    // Verificar evento y opción
+    const evSnap = await getDoc(eventDoc(event_id));
     if (!evSnap.exists()) throw new Error('Evento no disponible');
-    const ev = evSnap.data();
-    if (ev.status !== 'open') throw new Error('Evento no disponible');
-    const opt = (ev.options || []).find(o => o?.name === option_name);
+    const event = evSnap.data();
+    if (event.status !== 'open') throw new Error('Evento no disponible');
+    
+    const opt = (event.options || []).find(o => o?.name === option_name);
     if (!opt) throw new Error('Opcion no valida');
 
+    // Calcular ganancia potencial
     const potential_win = Math.round(amt * Number(opt.odds || 0) * 100) / 100;
+
+    // Crear payload de la apuesta
     const betPayload = {
       user_id: uid,
-      username: username || u.username || '',
+      username: username || user.username || '',
       event_id,
-      event_title: ev.title || '',
+      event_title: event.title || '',
       option_name,
       amount: amt,
       odds: Number(opt.odds || 0),
@@ -224,12 +230,19 @@ export async function placeBet({ uid, username, event_id, option_name, amount })
       created_at: serverTimestamp(),
     };
 
-    const betRef = doc(betsCol());
-    tx.set(betRef, betPayload);
-    tx.update(uRef, { balance: increment(-amt) });
+    // Guardar apuesta en Firestore usando addDoc
+    const betRef = await addDoc(betsCol(), betPayload);
+    
+    // Restar saldo del usuario
+    await updateDoc(userDoc(uid), { balance: increment(-amt) });
 
+    console.log("Apuesta guardada exitosamente:", betRef.id);
     return { id: betRef.id, ...betPayload };
-  });
+    
+  } catch (error) {
+    console.error("Error en placeBet:", error);
+    throw error;
+  }
 }
 
 // =========================

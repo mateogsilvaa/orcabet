@@ -110,13 +110,27 @@ export default function BettingPage() {
       toast.error('Introduce una cantidad valida');
       return;
     }
+    
+    // Prevenir múltiples clicks
+    if (placing) {
+      console.log("Apuesta ya en proceso, ignorando click múltiple");
+      return;
+    }
+    
     setPlacing(true);
     try {
       const firebaseUser = auth.currentUser;
       if (!firebaseUser) throw new Error('Usuario no autenticado');
       
-      // Realizar apuesta - onSnapshot actualizará automáticamente
-      await placeBet({
+      console.log("Iniciando apuesta:", {
+        uid: firebaseUser.uid,
+        event_id: betSlip.event.id,
+        option_name: betSlip.option.name,
+        amount: Number(betAmount)
+      });
+      
+      // Realizar apuesta con await obligatorio
+      const result = await placeBet({
         uid: firebaseUser.uid,
         username: user?.username,
         event_id: betSlip.event.id,
@@ -124,17 +138,21 @@ export default function BettingPage() {
         amount: Number(betAmount),
       });
       
-      // Solo mostrar toast y resetear formulario una vez
+      console.log("Apuesta guardada exitosamente:", result.id);
+      
+      // Toast SOLO después del await exitoso
       toast.success('Apuesta realizada!');
+      
+      // Resetear formulario
       setBetSlip(null);
       setBetAmount('');
       await refreshBalance();
       
-      // NO llamar a loadData() - onSnapshot maneja las actualizaciones
+      // NO llamar a loadData() - onSnapshot actualiza automáticamente
       
-    } catch (err) {
-      console.error('Error al realizar apuesta:', err);
-      toast.error(err?.message || 'Error al apostar');
+    } catch (error) {
+      console.error("Error al apostar:", error);
+      toast.error(error?.message || 'Error al apostar');
     } finally {
       setPlacing(false);
     }
