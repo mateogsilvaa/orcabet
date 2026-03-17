@@ -23,6 +23,24 @@
         -->
         <title>Orcabet</title>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+        <script>
+            // GitHub Pages SPA support (BrowserRouter). Based on rafgraph/spa-github-pages.
+            (function (l) {
+                if (l.search && l.search.startsWith("?p=")) {
+                    try {
+                        var params = new URLSearchParams(l.search);
+                        var p = params.get("p");
+                        var q = params.get("q");
+                        if (p) {
+                            var newUrl = l.pathname.replace(/\/$/, "") + decodeURIComponent(p) + (q ? ("?" + q) : "") + l.hash;
+                            window.history.replaceState(null, "", newUrl);
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            })(window.location);
+        </script>
         
     </head>
     <body>

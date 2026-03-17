@@ -51,6 +51,14 @@ export default function DashboardPage() {
     lost: { label: 'Perdida', class: 'bg-red-500/20 text-red-400 border-red-500/30', icon: TrendingDown },
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-8 h-8 border-2 border-[#ff5e00] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-fade-in" data-testid="dashboard-page">
       {/* Greeting + Balance */}

@@ -51,7 +51,7 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={process.env.PUBLIC_URL || "/"}>
         <Toaster
           theme="dark"
           position="top-right"

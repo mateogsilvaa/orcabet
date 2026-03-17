@@ -74,6 +74,14 @@ export default function BettingPage() {
     lost: { label: 'Perdida', class: 'bg-red-500/20 text-red-400 border-red-500/30' },
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in" data-testid="betting-page">
       <div>
@@ -92,9 +100,7 @@ export default function BettingPage() {
         </TabsList>
 
         <TabsContent value="events" className="mt-4 space-y-4">
-          {loading ? (
-            <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
-          ) : events.filter(e => e.status === 'open').length === 0 ? (
+          {events?.filter?.(e => e.status === 'open')?.length === 0 ? (
             <Card className="bg-[#0A0A0F] border-white/5">
               <CardContent className="p-8 text-center">
                 <Target size={36} className="text-gray-700 mx-auto mb-3" />
@@ -103,7 +109,7 @@ export default function BettingPage() {
               </CardContent>
             </Card>
           ) : (
-            events.filter(e => e.status === 'open').map(event => (
+            (events || []).filter(e => e.status === 'open').map(event => (
               <Card key={event.id} className="bg-[#0A0A0F] border-white/5 overflow-hidden" data-testid={`event-card-${event.id}`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">

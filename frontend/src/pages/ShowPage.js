@@ -87,11 +87,11 @@ export default function ShowPage() {
         </div>
         <div>
           <h3 className="font-heading text-base font-bold text-white mb-4">Cartas ({profile.total_cards})</h3>
-          {profile.cards.length === 0 ? (
+          {(profile.cards?.length || 0) === 0 ? (
             <p className="text-gray-500 font-body text-sm text-center py-8">Este jugador no tiene cartas</p>
           ) : (
             <div className="flex flex-wrap gap-4">
-              {profile.cards.map(card => (
+              {profile.cards?.map?.(card => (
                 <AthleteCard key={card.id} card={card} size="small" showStats={false} />
               ))}
             </div>
@@ -153,7 +153,7 @@ export default function ShowPage() {
           <Trophy size={18} className="text-yellow-400" /> Ranking
         </h2>
         <div className="space-y-2">
-          {leaderboard.map((u, idx) => (
+          {(leaderboard || []).map((u, idx) => (
             <Card
               key={u.id}
               className={`bg-[#0A0A0F] border-white/5 hover:border-primary/20 transition-all cursor-pointer ${

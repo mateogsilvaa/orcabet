@@ -116,11 +116,15 @@ export async function getUserBalance(uid) {
 // EVENTS
 // =========================
 export async function listEvents({ includeAll = false } = {}) {
-  const q = includeAll
-    ? query(eventsCol(), orderBy('created_at', 'desc'))
-    : query(eventsCol(), where('status', 'in', ['open', 'closed']), orderBy('created_at', 'desc'));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const q = includeAll
+      ? query(eventsCol(), orderBy('created_at', 'desc'))
+      : query(eventsCol(), where('status', 'in', ['open', 'closed']), orderBy('created_at', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {
+    return [];
+  }
 }
 
 export async function createEvent(eventData) {
@@ -178,8 +182,12 @@ export async function resolveEvent(eventId, winningOption) {
 // BETS
 // =========================
 export async function listMyBets(uid) {
-  const snap = await getDocs(query(betsCol(), where('user_id', '==', uid), orderBy('created_at', 'desc'), limit(100)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await getDocs(query(betsCol(), where('user_id', '==', uid), orderBy('created_at', 'desc'), limit(100)));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {
+    return [];
+  }
 }
 
 export async function placeBet({ uid, username, event_id, option_name, amount }) {
@@ -227,8 +235,12 @@ export async function placeBet({ uid, username, event_id, option_name, amount })
 // ATHLETES
 // =========================
 export async function listAthletes() {
-  const snap = await getDocs(query(athletesCol(), orderBy('created_at', 'desc')));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await getDocs(query(athletesCol(), orderBy('created_at', 'desc')));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {
+    return [];
+  }
 }
 
 export async function createAthlete(data) {
@@ -350,21 +362,25 @@ export async function pickCard({ uid, pack_id, card_index }) {
 }
 
 export async function getMyCollection(uid) {
-  const [cardsSnap, athletesSnap] = await Promise.all([
-    getDocs(query(userCardsCol(uid), where('is_listed', '==', false), limit(500))),
-    getDocs(query(athletesCol(), limit(1000))),
-  ]);
+  try {
+    const [cardsSnap, athletesSnap] = await Promise.all([
+      getDocs(query(userCardsCol(uid), where('is_listed', '==', false), limit(500))),
+      getDocs(query(athletesCol(), limit(1000))),
+    ]);
 
-  const cards = cardsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const total_athletes = athletesSnap.size;
-  const unique_ids = new Set(cards.map(c => c.athlete_id));
-  return {
-    cards,
-    total_unique: unique_ids.size,
-    total_athletes,
-    total_cards: cards.length,
-    duplicates: cards.length - unique_ids.size,
-  };
+    const cards = cardsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const total_athletes = athletesSnap.size;
+    const unique_ids = new Set(cards.map(c => c.athlete_id));
+    return {
+      cards,
+      total_unique: unique_ids.size,
+      total_athletes,
+      total_cards: cards.length,
+      duplicates: cards.length - unique_ids.size,
+    };
+  } catch {
+    return { cards: [], total_unique: 0, total_athletes: 0, total_cards: 0, duplicates: 0 };
+  }
 }
 
 export async function getUserCollectionProfile(userId) {
@@ -385,8 +401,12 @@ export async function getUserCollectionProfile(userId) {
 // MARKET
 // =========================
 export async function listMarketListings() {
-  const snap = await getDocs(query(marketCol(), where('status', '==', 'active'), orderBy('created_at', 'desc'), limit(200)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await getDocs(query(marketCol(), where('status', '==', 'active'), orderBy('created_at', 'desc'), limit(200)));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {
+    return [];
+  }
 }
 
 export async function listCardOnMarket({ uid, username, user_card_id, price, listing_type }) {
@@ -571,18 +591,22 @@ export async function playRoulette({ uid, bet_type, bet_value, amount }) {
 export async function listLeaderboard() {
   // Requiere que el user_doc tenga un campo `total_cards` mantenido.
   // Como no hay backend, lo calculamos con collectionGroup (costoso, pero funcional).
-  const usersSnap = await getDocs(query(usersCol(), where('is_admin', '!=', true), limit(200)));
-  const users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const usersSnap = await getDocs(query(usersCol(), where('is_admin', '!=', true), limit(200)));
+    const users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  const countsSnap = await getDocs(collectionGroup(db, 'cards'));
-  const counts = new Map();
-  for (const d of countsSnap.docs) {
-    const uid = d.ref.path.split('/')[1];
-    counts.set(uid, (counts.get(uid) || 0) + 1);
+    const countsSnap = await getDocs(collectionGroup(db, 'cards'));
+    const counts = new Map();
+    for (const d of countsSnap.docs) {
+      const uid = d.ref.path.split('/')[1];
+      counts.set(uid, (counts.get(uid) || 0) + 1);
+    }
+    for (const u of users) u.total_cards = counts.get(u.id) || 0;
+    users.sort((a, b) => (b.total_cards || 0) - (a.total_cards || 0));
+    return users.slice(0, 20);
+  } catch {
+    return [];
   }
-  for (const u of users) u.total_cards = counts.get(u.id) || 0;
-  users.sort((a, b) => (b.total_cards || 0) - (a.total_cards || 0));
-  return users.slice(0, 20);
 }
 
 export async function searchUsersByUsername(qStr) {
@@ -592,8 +616,12 @@ export async function searchUsersByUsername(qStr) {
   // Búsqueda "contains" real no existe sin índices/algolia.
   // Implementamos prefijo con rango: username >= q && username < q+\uf8ff
   const end = `${qTrim}\uf8ff`;
-  const snap = await getDocs(query(usersCol(), orderBy('username'), where('username', '>=', qTrim), where('username', '<=', end), limit(20)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await getDocs(query(usersCol(), orderBy('username'), where('username', '>=', qTrim), where('username', '<=', end), limit(20)));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {
+    return [];
+  }
 }
 
 // =========================
