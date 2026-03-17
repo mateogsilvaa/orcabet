@@ -96,13 +96,13 @@ export default function RoulettePage() {
       const targetIndex = wheelNumbers.indexOf(winNum);
       
       // OFFSET MANUAL: Si la imagen del 0 no está perfectamente a las 12 en punto en el archivo original
-      // Compensamos las 15 casillas exactas de desfase físico de la imagen
-      const IMAGE_OFFSET = 15 * segmentAngle; 
+      // CAMBIO CLAVE: El offset debe ser -15, no 15.
+      const IMAGE_OFFSET = -15 * segmentAngle; 
       
-      // Mantenemos el ajuste de centrado porque la flecha cae perfecta
+      // Mantenemos esto igual, el centrado visual es perfecto
       const CENTER_ADJUST = segmentAngle / 2;
       
-      console.log(`[OFFSET] Desfase físico: ${IMAGE_OFFSET}° (15 segmentos × 9.73°)`);
+      console.log(`[OFFSET] Desfase físico corregido: ${IMAGE_OFFSET}° (-15 segmentos × 9.73°)`);
       console.log(`[CENTRO] Ajuste centrado: ${CENTER_ADJUST}° para centrado milimétrico`);
        
       // Cálculo final del ángulo
