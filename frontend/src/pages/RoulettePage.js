@@ -10,6 +10,7 @@ import { RotateCw, Zap } from 'lucide-react';
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const ROTATION_OFFSET = 87.6; // Offset calculado para sincronizar visual con lógica
 
 const getNumColor = (n) => n === 0 ? 'verde' : RED_NUMBERS.includes(n) ? 'rojo' : 'negro';
 const getNumBg = (n) => n === 0 ? 'bg-green-600' : RED_NUMBERS.includes(n) ? 'bg-red-600' : 'bg-[#1a1a2e]';
@@ -73,10 +74,12 @@ export default function RoulettePage() {
       const winNum = res.result_number;
       const idx = WHEEL_ORDER.indexOf(winNum);
       const segAngle = 360 / 37;
-      // El ángulo del centro del segmento del número ganador
-      const targetAngle = idx * segAngle + segAngle / 2;
-      // Rotación total: múltiplos de 360 para el efecto + (360 - targetAngle) para que el número quede en el puntero
-      const newRot = wheelRotation + (5 * 360) + (360 - targetAngle);
+      // Ángulo del centro del segmento del número ganador (considerando que el SVG empieza en -90°)
+      const targetAngle = idx * segAngle + segAngle / 2 - 90;
+      // Aplicar offset de calibración
+      const calibratedAngle = targetAngle + ROTATION_OFFSET;
+      // Rotación total: múltiplos de 360 para el efecto + (360 - calibratedAngle) para que el número quede en el puntero
+      const newRot = wheelRotation + (5 * 360) + (360 - calibratedAngle);
       setWheelRotation(newRot);
       setTimeout(() => {
         setResult(res);
