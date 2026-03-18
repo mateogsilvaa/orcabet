@@ -269,6 +269,21 @@ export async function listAthletes() {
   }
 }
 
+export async function updateAthlete(athleteId, updatedData) {
+  try {
+    if (!athleteId) throw new Error('ID de atleta requerido');
+    
+    const athleteRef = doc(db, 'athletes', athleteId);
+    await updateDoc(athleteRef, updatedData);
+    
+    console.log("Atleta actualizado exitosamente:", athleteId);
+    return { success: true, id: athleteId };
+  } catch (error) {
+    console.error("Error en updateAthlete:", error);
+    throw new Error('No se pudo actualizar el atleta');
+  }
+}
+
 export async function createAthlete(data) {
   const payload = {
     name: data.name,

@@ -11,6 +11,7 @@ import {
   deleteEvent as deleteEventSvc,
   createAthlete as createAthleteSvc,
   deleteAthlete as deleteAthleteSvc,
+  updateAthlete as updateAthleteSvc,
   adminAddBalance,
   unlockFreePackGlobal,
 } from '@/services/firebaseService';
@@ -21,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Shield, Users, Target, Layers, BarChart3, Plus, Trash2, CheckCircle, XCircle, User, Swords, Coins } from 'lucide-react';
+import { Shield, Users, Target, Layers, BarChart3, Plus, Trash2, CheckCircle, XCircle, User, Swords, Coins, Edit } from 'lucide-react';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -49,6 +50,9 @@ export default function AdminPage() {
   
   // Free pack global state
   const [giftingFreePack, setGiftingFreePack] = useState(false);
+  
+  // Edit athlete state
+  const [editingAthlete, setEditingAthlete] = useState(null);
 
   useEffect(() => {
     if (user?.is_admin) {
@@ -141,10 +145,19 @@ export default function AdminPage() {
   const createAthlete = async () => {
     if (!athleteForm.name) { toast.error('Nombre requerido'); return; }
     try {
-      await createAthleteSvc(athleteForm);
-      toast.success('Atleta creado!');
+      if (editingAthlete) {
+        // Modo edición
+        await updateAthleteSvc(editingAthlete.id, athleteForm);
+        toast.success('Atleta actualizado!');
+      } else {
+        // Modo creación
+        await createAthleteSvc(athleteForm);
+        toast.success('Atleta creado!');
+      }
+      
       setShowAthleteDialog(false);
       setAthleteForm({ name: '', position: '', team: '', rarity: 'common', overall_rating: 70, image_url: '', stats: { vel: 50, pot: 50, tec: 50 } });
+      setEditingAthlete(null);
       loadData();
     } catch (err) { toast.error(err?.message || 'Error'); }
   };
@@ -156,6 +169,26 @@ export default function AdminPage() {
       toast.success('Atleta eliminado');
       loadData();
     } catch (err) { toast.error(err?.message || 'Error'); }
+  };
+
+  const editAthlete = (athlete) => {
+    setAthleteForm({
+      name: athlete.name || '',
+      position: athlete.position || '',
+      team: athlete.team || '',
+      rarity: athlete.rarity || 'common',
+      overall_rating: athlete.overall_rating || 70,
+      image_url: athlete.image_url || '',
+      stats: athlete.stats || { vel: 50, pot: 50, tec: 50 }
+    });
+    setEditingAthlete(athlete);
+    setShowAthleteDialog(true);
+  };
+
+  const cancelEditAthlete = () => {
+    setShowAthleteDialog(false);
+    setAthleteForm({ name: '', position: '', team: '', rarity: 'common', overall_rating: 70, image_url: '', stats: { vel: 50, pot: 50, tec: 50 } });
+    setEditingAthlete(null);
   };
 
   const giftFreePackToAll = async () => {
@@ -327,9 +360,14 @@ export default function AdminPage() {
                       </div>
                     </div>
                   </div>
-                  <Button onClick={() => deleteAthlete(a.id)} variant="ghost" size="icon" className="text-gray-600 hover:text-red-400 h-8 w-8">
-                    <Trash2 size={14} />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button onClick={() => editAthlete(a)} variant="ghost" size="icon" className="text-gray-600 hover:text-blue-400 h-8 w-8" title="Editar">
+                      <Edit size={14} />
+                    </Button>
+                    <Button onClick={() => deleteAthlete(a.id)} variant="ghost" size="icon" className="text-gray-600 hover:text-red-400 h-8 w-8" title="Eliminar">
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -406,7 +444,9 @@ export default function AdminPage() {
       <Dialog open={showAthleteDialog} onOpenChange={setShowAthleteDialog}>
         <DialogContent className="bg-[#0A0A0F] border-primary/20 max-w-lg max-h-[85vh] overflow-y-auto" data-testid="create-athlete-dialog">
           <DialogHeader>
-            <DialogTitle className="font-heading text-lg text-white">Nuevo Atleta</DialogTitle>
+            <DialogTitle className="font-heading text-lg text-white">
+              {editingAthlete ? 'Editar Atleta' : 'Nuevo Atleta'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input value={athleteForm.name} onChange={e => setAthleteForm({...athleteForm, name: e.target.value})} placeholder="Nombre" className="bg-black/50 border-white/10 text-white" data-testid="athlete-name-input" />
@@ -438,7 +478,16 @@ export default function AdminPage() {
                 <input type="range" min="1" max="99" value={athleteForm.stats.tec} onChange={e => setAthleteForm({...athleteForm, stats: {...athleteForm.stats, tec: Number(e.target.value)}})} className="w-full accent-primary" />
               </div>
             </div>
-            <Button onClick={createAthlete} className="w-full bg-primary text-black font-bold" data-testid="submit-athlete-btn">Crear Atleta</Button>
+            <div className="flex gap-2">
+              {editingAthlete && (
+                <Button onClick={cancelEditAthlete} variant="outline" className="flex-1 border-white/10 text-gray-400 hover:text-white">
+                  Cancelar edición
+                </Button>
+              )}
+              <Button onClick={createAthlete} className={`${editingAthlete ? 'flex-1' : 'w-full'} bg-primary text-black font-bold`} data-testid="submit-athlete-btn">
+                {editingAthlete ? 'Actualizar Atleta' : 'Crear Atleta'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
