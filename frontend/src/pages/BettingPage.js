@@ -41,7 +41,6 @@ export default function BettingPage() {
             id: doc.id,
             ...doc.data()
           }));
-          console.log("Eventos recibidos:", eventsData?.length || 0);
           setEvents(eventsData || []);
           setLoading(false);
         } catch (error) {
@@ -74,7 +73,6 @@ export default function BettingPage() {
               id: doc.id,
               ...doc.data()
             }));
-            console.log("Apuestas recibidas:", betsData?.length || 0);
             setMyBets(betsData || []);
             setLoading(false);
           } catch (error) {
@@ -105,7 +103,8 @@ export default function BettingPage() {
     setSlipOpen(true);
   };
 
-  const placeBet = async () => {
+  // AQUÍ ESTABA EL ERROR: Renombrado a handlePlaceBet
+  const handlePlaceBet = async () => {
     if (!betSlip || !betAmount || Number(betAmount) <= 0) {
       toast.error('Introduce una cantidad valida');
       return;
@@ -125,8 +124,8 @@ export default function BettingPage() {
       const amount = Number(betAmount);
       if (amount <= 0) throw new Error('La cantidad debe ser mayor a 0');
       
-      // Llamar a Firebase
-      const result = await placeBet({
+      // Llamar a Firebase (ahora sí llama a la función importada)
+      await placeBet({
         uid: firebaseUser.uid,
         username: user?.username,
         event_id: betSlip.event.id,
@@ -318,7 +317,7 @@ export default function BettingPage() {
                   Cancelar
                 </Button>
                 <Button
-                  onClick={() => placeBet()}
+                  onClick={handlePlaceBet} 
                   disabled={placing || !betAmount}
                   data-testid="place-bet-btn"
                   className="flex-1 bg-primary text-black font-bold"
