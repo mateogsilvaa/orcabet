@@ -113,7 +113,6 @@ export default function BettingPage() {
     
     // Prevenir múltiples clicks
     if (placing) {
-      console.log("Apuesta ya en proceso, ignorando click múltiple");
       return;
     }
     
@@ -122,37 +121,31 @@ export default function BettingPage() {
       const firebaseUser = auth.currentUser;
       if (!firebaseUser) throw new Error('Usuario no autenticado');
       
-      console.log("Iniciando apuesta:", {
-        uid: firebaseUser.uid,
-        event_id: betSlip.event.id,
-        option_name: betSlip.option.name,
-        amount: Number(betAmount)
-      });
+      // Validar que betAmount > 0
+      const amount = Number(betAmount);
+      if (amount <= 0) throw new Error('La cantidad debe ser mayor a 0');
       
-      // Realizar apuesta con await obligatorio
+      // Llamar a Firebase
       const result = await placeBet({
         uid: firebaseUser.uid,
         username: user?.username,
         event_id: betSlip.event.id,
         option_name: betSlip.option.name,
-        amount: Number(betAmount),
+        amount: amount,
       });
       
-      console.log("Apuesta guardada exitosamente:", result.id);
+      // Si tiene éxito: mostrar toast
+      toast.success('Apuesta realizada correctamente');
       
-      // Toast SOLO después del await exitoso
-      toast.success('Apuesta realizada!');
-      
-      // Resetear formulario
+      // Reset: cerrar boleto inmediatamente
       setBetSlip(null);
       setBetAmount('');
+      setSlipOpen(false);
       await refreshBalance();
       
-      // NO llamar a loadData() - onSnapshot actualiza automáticamente
-      
     } catch (error) {
-      console.error("Error al apostar:", error);
-      toast.error(error?.message || 'Error al apostar');
+      console.error("Error al realizar apuesta:", error);
+      toast.error(error?.message || 'Error al realizar apuesta');
     } finally {
       setPlacing(false);
     }
