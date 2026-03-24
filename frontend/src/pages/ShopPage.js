@@ -168,20 +168,19 @@ export default function ShopPage() {
                       onClick={() => allRevealed && pickCard(idx)}
                       className={`w-full h-full rounded-xl border-2 p-3 flex flex-col items-center justify-center text-center rarity-${card.rarity} ${allRevealed ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
                     >
-                      <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center mb-2">
-                        <span className="font-heading text-lg font-black text-white">{card.overall_rating}</span>
-                      </div>
-                      <p className="font-heading text-xs font-bold text-white truncate w-full">{card.athlete_name}</p>
-                      <p className="text-[9px] text-gray-400 font-body">{card.athlete_position}</p>
-                      <p className="text-[9px] text-gray-500 font-body">{card.athlete_team}</p>
-                      <Badge className={`mt-2 text-[8px] ${
-                        card.rarity === 'legendary' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                        card.rarity === 'epic' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
-                        card.rarity === 'rare' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                        'bg-gray-500/20 text-gray-400 border-gray-500/30'
-                      }`}>
-                        {card.rarity === 'legendary' ? 'Legendaria' : card.rarity === 'epic' ? 'Epica' : card.rarity === 'rare' ? 'Rara' : 'Comun'}
-                      </Badge>
+                      <AthleteCard 
+                        card={{
+                          athlete_id: card.athlete_id,
+                          athlete_name: card.athlete_name,
+                          athlete_image: card.athlete_image,
+                          position: card.athlete_position,
+                          team: card.athlete_team,
+                          overall_rating: card.overall_rating,
+                          rarity: card.rarity,
+                          stats: card.stats || { vel: 0, pot: 0, tec: 0 }
+                        }} 
+                        size="small" 
+                      />
                       {allRevealed && (
                         <p className="text-[8px] text-primary font-mono mt-2 animate-pulse">CLICK PARA ELEGIR</p>
                       )}

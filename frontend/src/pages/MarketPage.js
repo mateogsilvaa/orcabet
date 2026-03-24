@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AthleteCard } from '@/components/AthleteCard';
 import { toast } from 'sonner';
 import { Store, Coins, Tag, Gavel, User, Plus, X } from 'lucide-react';
 
@@ -38,6 +39,7 @@ export default function MarketPage() {
   const [sellType, setSellType] = useState('fixed');
   const [bidAmount, setBidAmount] = useState('');
   const [bidDialog, setBidDialog] = useState(null);
+  const [selectedCard, setSelectedCard] = useState(null);
 
   useEffect(() => {
     const firebaseUser = auth.currentUser;
@@ -174,16 +176,22 @@ export default function MarketPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {listings.filter(l => l.seller_id !== user?.id).map(listing => (
-                <Card key={listing.id} className="bg-[#0A0A0F] border-white/5 hover:border-primary/20 transition-all" data-testid={`listing-${listing.id}`}>
+                <Card key={listing.id} className="bg-[#0A0A0F] border-white/5 hover:border-primary/20 transition-all cursor-pointer" data-testid={`listing-${listing.id}`} onClick={() => setSelectedCard(listing)}>
                   <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center">
-                        <span className="font-heading text-sm font-black text-white">{listing.overall_rating}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-heading font-bold text-white truncate">{listing.athlete_name}</p>
-                        <Badge className={`text-[9px] ${RARITY_BADGE[listing.rarity]}`}>{RARITY_LABEL[listing.rarity]}</Badge>
-                      </div>
+                    <div className="flex justify-center">
+                      <AthleteCard 
+                        card={{
+                          athlete_id: listing.athlete_id,
+                          athlete_name: listing.athlete_name,
+                          athlete_image: listing.athlete_image,
+                          position: listing.athlete_position,
+                          team: listing.athlete_team,
+                          overall_rating: listing.overall_rating,
+                          rarity: listing.rarity,
+                          stats: listing.stats || { vel: 0, pot: 0, tec: 0 }
+                        }} 
+                        size="small" 
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
@@ -202,11 +210,11 @@ export default function MarketPage() {
                         </span>
                       </div>
                       {listing.listing_type === 'fixed' ? (
-                        <Button onClick={() => buyListing(listing.id)} className="bg-primary text-black font-bold" size="sm" data-testid={`buy-listing-${listing.id}`}>
+                        <Button onClick={(e) => { e.stopPropagation(); buyListing(listing.id); }} className="bg-primary text-black font-bold" size="sm" data-testid={`buy-listing-${listing.id}`}>
                           Comprar
                         </Button>
                       ) : (
-                        <Button onClick={() => setBidDialog(listing)} className="bg-purple-600 text-white font-bold" size="sm">
+                        <Button onClick={(e) => { e.stopPropagation(); setBidDialog(listing); }} className="bg-purple-600 text-white font-bold" size="sm">
                           <Gavel size={14} className="mr-1" /> Pujar
                         </Button>
                       )}
@@ -315,6 +323,72 @@ export default function MarketPage() {
               <Gavel size={14} className="mr-1" /> Confirmar Puja
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Card Details Dialog */}
+      <Dialog open={!!selectedCard} onOpenChange={() => setSelectedCard(null)}>
+        <DialogContent className="bg-[#0A0A0F] border-primary/20 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg text-white">Detalles de la Carta</DialogTitle>
+          </DialogHeader>
+          {selectedCard && (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <AthleteCard 
+                  card={{
+                    athlete_id: selectedCard.athlete_id,
+                    athlete_name: selectedCard.athlete_name,
+                    athlete_image: selectedCard.athlete_image,
+                    position: selectedCard.athlete_position,
+                    team: selectedCard.athlete_team,
+                    overall_rating: selectedCard.overall_rating,
+                    rarity: selectedCard.rarity,
+                    stats: selectedCard.stats || { vel: 0, pot: 0, tec: 0 }
+                  }} 
+                  size="default" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500 font-mono text-xs">Vendedor</p>
+                  <p className="text-white font-body">{selectedCard.seller_name}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-mono text-xs">Tipo</p>
+                  <Badge className={selectedCard.listing_type === 'auction' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-primary/20 text-primary border-primary/30'}>
+                    {selectedCard.listing_type === 'auction' ? 'Subasta' : 'Fijo'}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-mono text-xs">Precio</p>
+                  <p className="text-primary font-heading font-bold">
+                    {selectedCard.listing_type === 'auction' ? selectedCard.highest_bid || selectedCard.price : selectedCard.price} monedas
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-mono text-xs">Rareza</p>
+                  <Badge className={`text-[9px] ${RARITY_BADGE[selectedCard.rarity]}`}>
+                    {RARITY_LABEL[selectedCard.rarity]}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {selectedCard.listing_type === 'fixed' ? (
+                  <Button onClick={() => { buyListing(selectedCard.id); setSelectedCard(null); }} className="flex-1 bg-primary text-black font-bold">
+                    Comprar
+                  </Button>
+                ) : (
+                  <Button onClick={() => { setBidDialog(selectedCard); setSelectedCard(null); }} className="flex-1 bg-purple-600 text-white font-bold">
+                    <Gavel size={14} className="mr-1" /> Pujar
+                  </Button>
+                )}
+                <Button onClick={() => setSelectedCard(null)} variant="outline" className="border-white/10 text-gray-400">
+                  Cerrar
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

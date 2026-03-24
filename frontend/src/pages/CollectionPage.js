@@ -108,7 +108,7 @@ export default function CollectionPage() {
         </div>
       </div>
 
-      {/* Cards Grid */}
+      {/* Cards Grid - Mobile Optimized */}
       {loading ? (
         <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
       ) : filteredCards.length === 0 ? (
@@ -119,9 +119,9 @@ export default function CollectionPage() {
           </p>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-4" data-testid="cards-grid">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4" data-testid="cards-grid">
           {filteredCards.map(card => (
-            <AthleteCard key={card.id} card={card} />
+            <AthleteCard key={card.id} card={card} size="small" />
           ))}
         </div>
       )}

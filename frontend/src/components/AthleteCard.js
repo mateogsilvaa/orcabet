@@ -29,52 +29,83 @@ export function AthleteCard({ card, size = 'default', onClick, showStats = true 
         bg-gradient-to-b ${bg} overflow-hidden
         transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]
         ${onClick ? 'cursor-pointer' : ''}
-        ${isSmall ? 'w-36' : 'w-48'}
+        ${isSmall ? 'w-32 sm:w-36' : 'w-40 sm:w-44 md:w-48'}
       `}
     >
       {/* Card Image / Avatar Area */}
-      <div className={`relative flex items-center justify-center bg-black/30 ${isSmall ? 'h-28' : 'h-36'}`}>
+      <div className={`relative flex items-center justify-center bg-black/30 ${isSmall ? 'h-24 sm:h-28' : 'h-32 sm:h-36'}`}>
         {card.athlete_image ? (
-          <img src={card.athlete_image} alt={card.athlete_name} className="w-full h-full object-cover" />
+          <img 
+            src={card.athlete_image} 
+            alt={card.athlete_name} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.parentElement.innerHTML = `
+                <div class="flex flex-col items-center gap-2">
+                  <svg class="text-gray-600" width="${isSmall ? 32 : 44}" height="${isSmall ? 32 : 44}" fill="none" stroke="currentColor" stroke-width="1">
+                    <circle cx="50%" cy="40%" r="40%" fill="currentColor"/>
+                    <path d="M20 20 L20 28 M20 28 L16 24 M20 28 L24 24" stroke="white" stroke-width="2"/>
+                  </svg>
+                </div>
+              `;
+            }}
+          />
         ) : (
           <div className="flex flex-col items-center gap-2">
-            <User size={isSmall ? 32 : 44} className="text-gray-600" strokeWidth={1} />
+            <User size={isSmall ? 28 : 40} className="text-gray-600" strokeWidth={1} />
           </div>
         )}
         {/* Rating badge */}
-        <div className={`absolute top-2 right-2 ${isSmall ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'} rounded-lg bg-black/70 backdrop-blur border ${rarity.border} flex items-center justify-center font-heading font-black`}>
+        <div className={`absolute top-2 right-2 ${isSmall ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs'} rounded-lg bg-black/70 backdrop-blur border ${rarity.border} flex items-center justify-center font-heading font-black`}>
           {card.overall_rating}
         </div>
         {/* Position */}
         <div className="absolute bottom-2 left-2">
-          <span className="text-[10px] font-mono font-bold tracking-wider bg-black/60 backdrop-blur px-1.5 py-0.5 rounded text-gray-300">
-            {card.athlete_position || card.position}
+          <span className="text-[8px] sm:text-[10px] font-mono font-bold tracking-wider bg-black/60 backdrop-blur px-1 sm:px-1.5 py-0.5 rounded text-gray-300">
+            {card.position || 'POS'}
           </span>
         </div>
       </div>
-
-      {/* Card Info */}
-      <div className={`${isSmall ? 'p-2' : 'p-3'}`}>
-        <p className={`font-heading font-bold text-white truncate ${isSmall ? 'text-xs' : 'text-sm'}`}>
-          {card.athlete_name || card.name}
-        </p>
-        <p className="text-[10px] text-gray-500 font-body truncate mt-0.5">
-          {card.athlete_team || card.team}
-        </p>
-        <div className="flex items-center gap-1 mt-1.5">
-          <Badge className={`text-[9px] px-1.5 py-0 h-4 ${rarity.color}`}>
-            {rarity.label}
-          </Badge>
+      
+      {/* Card Content */}
+      <div className={`p-2 sm:p-3 ${isSmall ? 'space-y-1' : 'space-y-2'}`}>
+        <div>
+          <h3 className={`font-heading font-bold text-white truncate ${isSmall ? 'text-xs' : 'text-sm'}`}>
+            {card.athlete_name || 'Sin Nombre'}
+          </h3>
+          <p className={`text-gray-400 truncate ${isSmall ? 'text-[10px]' : 'text-xs'}`}>
+            {card.team || 'Sin Equipo'}
+          </p>
         </div>
-
-        {/* Stats */}
-        {showStats && card.stats && !isSmall && (
-          <div className="mt-3 space-y-1.5">
-            <StatRow icon={Zap} label="VEL" value={card.stats.speed || card.stats.vel || 0} />
-            <StatRow icon={Swords} label="POT" value={card.stats.attack || card.stats.pot || 0} />
-            <StatRow icon={Shield} label="TEC" value={card.stats.defense || card.stats.tec || 0} />
+        
+        {showStats && (
+          <div className="flex justify-between items-center">
+            <div className="flex gap-1 sm:gap-2">
+              <span className={`font-mono font-bold ${isSmall ? 'text-[10px]' : 'text-xs'}`}>
+                <span className="text-gray-500">V</span>
+                <span className="text-gray-300 ml-0.5">{card.stats?.vel || 0}</span>
+              </span>
+              <span className={`font-mono font-bold ${isSmall ? 'text-[10px]' : 'text-xs'}`}>
+                <span className="text-gray-500">P</span>
+                <span className="text-gray-300 ml-0.5">{card.stats?.pot || 0}</span>
+              </span>
+              <span className={`font-mono font-bold ${isSmall ? 'text-[10px]' : 'text-xs'}`}>
+                <span className="text-gray-500">T</span>
+                <span className="text-gray-300 ml-0.5">{card.stats?.tec || 0}</span>
+              </span>
+            </div>
           </div>
         )}
+        
+        <div className="flex justify-between items-center">
+          <Badge className={`text-[8px] sm:text-[10px] ${rarity.color} border border-current/20`}>
+            {rarity.label}
+          </Badge>
+          <span className={`font-mono text-gray-500 ${isSmall ? 'text-[8px]' : 'text-[10px]'}`}>
+            #{card.athlete_id || '000'}
+          </span>
+        </div>
       </div>
     </div>
   );
