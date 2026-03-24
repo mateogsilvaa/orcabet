@@ -551,6 +551,7 @@ export async function listCardOnMarket({ uid, username, user_card_id, price, lis
 
 export async function buyListing({ buyer_uid, listing_id }) {
   await runTransaction(db, async (tx) => {
+    // Primero hacer todas las lecturas
     const lRef = marketDoc(listing_id);
     const lSnap = await tx.get(lRef);
     if (!lSnap.exists()) throw new Error('Listado no encontrado');
@@ -564,13 +565,14 @@ export async function buyListing({ buyer_uid, listing_id }) {
     const buyer = buyerSnap.data();
     if (Number(buyer.balance || 0) < Number(listing.price || 0)) throw new Error('Saldo insuficiente');
 
-    tx.update(buyerRef, { balance: increment(-Number(listing.price || 0)) });
-    tx.update(userDoc(listing.seller_id), { balance: increment(Number(listing.price || 0)) });
-
     const sellerCardRef = userCardDoc(listing.user_card_owner_id, listing.user_card_id);
     const sellerCardSnap = await tx.get(sellerCardRef);
     if (!sellerCardSnap.exists()) throw new Error('Carta no encontrada');
     const cardData = sellerCardSnap.data();
+
+    // Ahora hacer todas las escrituras
+    tx.update(buyerRef, { balance: increment(-Number(listing.price || 0)) });
+    tx.update(userDoc(listing.seller_id), { balance: increment(Number(listing.price || 0)) });
 
     const buyerCardRef = doc(userCardsCol(buyer_uid), listing.user_card_id);
     tx.set(buyerCardRef, { ...cardData, is_listed: false, obtained_at: cardData.obtained_at || serverTimestamp() }, { merge: true });
