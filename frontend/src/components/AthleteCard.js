@@ -20,14 +20,6 @@ export function AthleteCard({ card, size = 'default', onClick, showStats = true 
   const bg = RARITY_BG[card.rarity] || RARITY_BG.common;
   const isSmall = size === 'small';
 
-  // Extraer datos de forma segura
-  const name = card.athlete_name || card.name || 'Sin Nombre';
-  const position = card.position || card.athlete_position || 'POS';
-  const team = card.team || card.athlete_team || 'Sin Equipo';
-  const image = card.athlete_image || card.image_url;
-  const rating = card.overall_rating || 0;
-  const stats = card.stats || { vel: 0, pot: 0, tec: 0 };
-
   return (
     <div
       onClick={onClick}
@@ -42,10 +34,10 @@ export function AthleteCard({ card, size = 'default', onClick, showStats = true 
     >
       {/* Card Image / Avatar Area */}
       <div className={`relative flex items-center justify-center bg-black/30 ${isSmall ? 'h-28' : 'h-36'}`}>
-        {image ? (
+        {card.athlete_image || card.image_url ? (
           <img 
-            src={image} 
-            alt={name} 
+            src={card.athlete_image || card.image_url} 
+            alt={card.athlete_name || card.name} 
             className="w-full h-full object-cover"
             onError={(e) => {
               e.target.style.display = 'none';
@@ -58,12 +50,12 @@ export function AthleteCard({ card, size = 'default', onClick, showStats = true 
         )}
         {/* Rating badge */}
         <div className={`absolute top-2 right-2 ${isSmall ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'} rounded-lg bg-black/70 backdrop-blur border ${rarity.border} flex items-center justify-center font-heading font-black`}>
-          {rating}
+          {card.overall_rating || 0}
         </div>
         {/* Position */}
         <div className="absolute bottom-2 left-2">
           <span className="text-[10px] font-mono font-bold tracking-wider bg-black/60 backdrop-blur px-1.5 py-0.5 rounded text-gray-300">
-            {position}
+            {card.position || card.athlete_position || 'POS'}
           </span>
         </div>
       </div>
@@ -72,10 +64,10 @@ export function AthleteCard({ card, size = 'default', onClick, showStats = true 
       <div className={`p-3 ${isSmall ? 'space-y-2' : 'space-y-3'}`}>
         <div>
           <h3 className={`font-heading font-bold text-white truncate ${isSmall ? 'text-sm' : 'text-base'}`}>
-            {name}
+            {card.athlete_name || card.name || 'Sin Nombre'}
           </h3>
           <p className={`text-gray-400 truncate ${isSmall ? 'text-xs' : 'text-sm'}`}>
-            {team}
+            {card.team || card.athlete_team || 'Sin Equipo'}
           </p>
         </div>
         
@@ -84,15 +76,15 @@ export function AthleteCard({ card, size = 'default', onClick, showStats = true 
             <div className="flex gap-2">
               <span className="font-mono font-bold text-xs">
                 <span className="text-gray-500">V</span>
-                <span className="text-gray-300 ml-0.5">{stats.vel}</span>
+                <span className="text-gray-300 ml-0.5">{card.stats?.vel || 0}</span>
               </span>
               <span className="font-mono font-bold text-xs">
                 <span className="text-gray-500">P</span>
-                <span className="text-gray-300 ml-0.5">{stats.pot}</span>
+                <span className="text-gray-300 ml-0.5">{card.stats?.pot || 0}</span>
               </span>
               <span className="font-mono font-bold text-xs">
                 <span className="text-gray-500">T</span>
-                <span className="text-gray-300 ml-0.5">{stats.tec}</span>
+                <span className="text-gray-300 ml-0.5">{card.stats?.tec || 0}</span>
               </span>
             </div>
           </div>
