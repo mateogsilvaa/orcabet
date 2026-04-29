@@ -1,0 +1,169 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "Orcabet (Fantasy Orcasitas)",
+      "theme": "Nexo Cibernético (Cybernetic Nexus)",
+      "tone": "Futuristic, High-Stakes, Underground Gaming, Community-Driven",
+      "target_audience": "Young adults (18-30), Gamers, Sports Fans, Orcasitas Locals"
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Orbitron, sans-serif",
+        "body": "Exo 2, sans-serif",
+        "monospace": "JetBrains Mono, monospace"
+      },
+      "weights": {
+        "light": 300,
+        "regular": 400,
+        "bold": 700,
+        "black": 900
+      },
+      "usage": {
+        "h1": "text-4xl md:text-6xl font-black tracking-tighter uppercase font-heading",
+        "h2": "text-3xl md:text-4xl font-bold tracking-tight font-heading",
+        "h3": "text-xl md:text-2xl font-bold font-heading text-primary",
+        "body": "text-base md:text-lg font-light tracking-wide text-gray-300 font-body",
+        "label": "text-xs font-bold tracking-[0.2em] uppercase text-gray-500 font-mono"
+      }
+    },
+    "colors": {
+      "palette": {
+        "background": {
+          "default": "#050505",
+          "paper": "#0A0A0F",
+          "overlay": "rgba(5, 5, 5, 0.8)"
+        },
+        "primary": {
+          "default": "#FF6B00",
+          "hover": "#FF8533",
+          "glow": "rgba(255, 107, 0, 0.5)"
+        },
+        "secondary": {
+          "default": "#00F3FF",
+          "hover": "#33F6FF",
+          "glow": "rgba(0, 243, 255, 0.5)"
+        },
+        "accent": {
+          "purple": "#A855F7",
+          "green": "#22C55E",
+          "red": "#EF4444"
+        },
+        "rarity": {
+          "common": "#9CA3AF",
+          "rare": "#3B82F6",
+          "epic": "#A855F7",
+          "legendary": "#EAB308"
+        },
+        "text": {
+          "primary": "#FFFFFF",
+          "secondary": "#9CA3AF",
+          "muted": "#4B5563"
+        }
+      },
+      "gradients": {
+        "hero": "linear-gradient(to right, #050505, #0a0a0f)",
+        "card_shine": "linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.1) 25%, transparent 30%)",
+        "neon_orange": "linear-gradient(90deg, #FF6B00 0%, #FF8F00 100%)",
+        "cyber_grid": "linear-gradient(transparent 95%, #FF6B00 95%)"
+      }
+    },
+    "layout": {
+      "grid_system": "Bento Grid (mix of 1x1, 2x1, 2x2 cells)",
+      "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+      "spacing": {
+        "section": "py-24",
+        "component": "p-6 md:p-8"
+      },
+      "z_index": {
+        "modal": 50,
+        "dropdown": 40,
+        "sticky": 30,
+        "base": 1
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-primary text-black font-black uppercase tracking-widest px-8 py-3 clip-path-polygon hover:bg-primary/80 transition-all duration-300 shadow-[0_0_20px_rgba(255,107,0,0.4)]",
+        "secondary": "bg-transparent border border-primary/50 text-primary font-bold uppercase tracking-widest px-8 py-3 hover:bg-primary/10 transition-all duration-300",
+        "ghost": "text-gray-400 hover:text-white transition-colors duration-200"
+      },
+      "cards": {
+        "base": "bg-[#0A0A0F]/90 backdrop-blur-md border border-white/5 rounded-xl overflow-hidden hover:border-primary/50 transition-colors duration-300 relative group",
+        "glass": "bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl",
+        "feature": "bg-gradient-to-br from-[#0A0A0F] to-[#050505] border border-white/5 p-8 rounded-2xl hover:shadow-[0_0_30px_rgba(255,107,0,0.15)] transition-shadow duration-500"
+      },
+      "inputs": {
+        "default": "bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-300 placeholder:text-gray-600"
+      },
+      "betting_slip": {
+        "container": "fixed bottom-0 right-0 w-full md:w-96 bg-[#111] border-t-2 border-primary transform transition-transform duration-300 z-50",
+        "header": "bg-primary text-black font-bold p-4 flex justify-between items-center cursor-pointer"
+      }
+    },
+    "visual_enhancers": {
+      "effects": {
+        "glitch": "animate-glitch opacity-80",
+        "scanline": "bg-[url('https://transparenttextures.com/patterns/black-scales.png')] opacity-10 mix-blend-overlay",
+        "neon_glow": "drop-shadow-[0_0_10px_rgba(255,107,0,0.8)]"
+      },
+      "borders": {
+        "cyber": "border border-primary/30 relative after:content-[''] after:absolute after:top-0 after:left-0 after:w-2 after:h-2 after:bg-primary after:shadow-[0_0_10px_#FF6B00]",
+        "glass": "border border-white/10"
+      }
+    },
+    "motion": {
+      "transitions": {
+        "default": "transition-all duration-300 ease-out",
+        "slow": "transition-all duration-700 ease-in-out"
+      },
+      "animations": {
+        "hover_lift": "hover:-translate-y-1 hover:shadow-lg",
+        "pulse_slow": "animate-pulse",
+        "spin_slow": "animate-spin-slow"
+      }
+    }
+  },
+  "assets": {
+    "images": {
+      "backgrounds": {
+        "cyber_city": "https://images.unsplash.com/photo-1575365717666-1a84be3fd104?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHw0fHxjeWJlcnB1bmt8ZW58MHx8fHwxNzczNTkwMDU3fDA&ixlib=rb-4.1.0&q=85",
+        "neon_street": "https://images.unsplash.com/photo-1601042879364-f3947d3f9c16?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHwxfHxjeWJlcnB1bmt8ZW58MHx8fHwxNzczNTkwMDU3fDA&ixlib=rb-4.1.0&q=85",
+        "tech_alley": "https://images.unsplash.com/photo-1563863251222-11d3e3bd3b62?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHwyfHxjeWJlcnB1bmt8ZW58MHx8fHwxNzczNTkwMDU3fDA&ixlib=rb-4.1.0&q=85"
+      },
+      "sports": {
+        "match_action": "https://images.unsplash.com/photo-1626248801379-51a0748a5f96?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwyfHxzb2NjZXIlMjBtYXRjaHxlbnwwfHx8fDE3NzM1OTAwNTh8MA&ixlib=rb-4.1.0&q=85",
+        "field_stadium": "https://images.unsplash.com/photo-1522778119026-d647f0596c20?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwxfHxzb2NjZXIlMjBtYXRjaHxlbnwwfHx8fDE3NzM1OTAwNTh8MA&ixlib=rb-4.1.0&q=85"
+      },
+      "gamification": {
+        "roulette_wheel": "https://images.pexels.com/photos/7594162/pexels-photo-7594162.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "card_placeholder": "https://images.unsplash.com/photo-1621568670868-24a7dfc590e9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwxfHx0cmFkaW5nJTIwY2FyZHxlbnwwfHx8fDE3NzM1OTAwNTl8MA&ixlib=rb-4.1.0&q=85"
+      }
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "stroke-width=1.5"
+    }
+  },
+  "instructions_to_main_agent": [
+    "INSTALL FONTS: Add 'Orbitron' and 'Exo 2' from Google Fonts to index.html or index.css immediately.",
+    "THEME ENFORCEMENT: Force Dark Mode. There is no light mode. The 'light' class in Tailwind should NOT be used or should mirror dark values.",
+    "COMPONENTS: Use Shadcn UI but STRIP all 'default' white/slate styling. Override with black/gray-900/neon-orange.",
+    "NAVIGATION: Create a floating bottom nav for mobile and a sidebar/topbar for desktop.",
+    "TEAM GENERATOR: Use HTML5 Canvas to compose the athlete image + stats + cyberpunk border overlaid on top.",
+    "ROULETTE: Implement a CSS/JS spinning wheel animation. Do not use a static image for the interaction.",
+    "BETTING SLIP: Needs to be always accessible (sticky) when bets are active.",
+    "CARD OPENING: This is the 'Wow' moment. Use Framer Motion for a 3D flip effect + particle explosion (tsparticles) when a high rarity is pulled.",
+    "ADMIN: Can be simpler/cleaner (Table-heavy), but keep the dark theme.",
+    "USER FEEDBACK: Use 'sonner' for toast notifications with neon borders."
+  ],
+  "universal_guidelines": [
+    "Don't make generic centered layouts.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "Every interaction needs micro-animations - hover states, transitions.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Subtle grain textures, noise overlays.",
+    "Never use AI assistant Emojis.",
+    "Components MUST use named exports.",
+    "Pages MUST use default exports."
+  ]
+}

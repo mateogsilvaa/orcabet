@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <title>Orcabet</title>
+    <script>
+      // GitHub Pages SPA redirect (BrowserRouter).
+      // Works for https://<user>.github.io/<repo>/... (segmentCount = 1)
+      (function () {
+        var segmentCount = 1;
+        var l = window.location;
+        var base = l.pathname.split("/").slice(0, 1 + segmentCount).join("/");
+        var rest = "/" + l.pathname.split("/").slice(1 + segmentCount).join("/");
+        var search = l.search ? "&q=" + l.search.slice(1) : "";
+        l.replace(l.origin + base + "/?p=" + encodeURIComponent(rest) + search + l.hash);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
+
